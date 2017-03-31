@@ -154,15 +154,14 @@ drugsetDT_original <-drugsetDT # preserve an original full dataset incase needed
 drugsetDT$prescription_dateplustime1.original <- drugsetDT$prescription_dateplustime1
 drugsetDT$prescription_dateplustime1 <- (drugsetDT$prescription_dateplustime1 - min(drugsetDT$prescription_dateplustime1)) / (max(drugsetDT$prescription_dateplustime1) - min(drugsetDT$prescription_dateplustime1))
 
-# # combinations
-# drugNamesVector <- drugsetDT$DrugName
-# combinations_2 <- as.data.frame(combinations(length(drugNamesVector), 2, drugNamesVector))
-# combinations_3 <- as.data.frame(combinations(length(drugNamesVector), 3, drugNamesVector))
-# combinations_4 <- as.data.frame(combinations(length(drugNamesVector), 4, drugNamesVector))
-# combinations_5 <- as.data.frame(combinations(length(drugNamesVector), 5, drugNamesVector))
+drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
 
-sequence <- seq(0, 1 , 0.001)
+sequence <- seq(0, 1 , 0.1)
 
+# generate bag of drugs frame
+drugWordFrame <- as.data.frame(matrix(nrow = length(unique(drugsetDT$LinkId)), ncol = (length(sequence)-1) ))
+
+# function to generate drugwords for each time interval
 returnIntervals <- function(inputSet, sequence) {
   
       ## add nil values to fill time slots without any drugs
@@ -189,7 +188,6 @@ returnIntervals <- function(inputSet, sequence) {
   
   reportSet <- reportSet[1:nrow(reportSet)-1, ]
   reportSet$intervalNumber <- c(1:nrow(reportSet))
-  
   
 }
 
