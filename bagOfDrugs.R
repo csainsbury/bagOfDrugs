@@ -136,6 +136,10 @@ topNdrugs_DrugNames <- topNdrugs_DrugNames[order(topNdrugs_DrugNames$Freq), ]
 
 topNdrugs <- tail(topNdrugs_DrugNames, n)
 
+topNdrugs$Var1 <- gsub(" ", "", topNdrugs$Var1, fixed = TRUE)
+topNdrugs$Var1 <- gsub("/", "", topNdrugs$Var1, fixed = TRUE)
+topNdrugs$Var1 <- gsub("-", "", topNdrugs$Var1, fixed = TRUE)
+
 # merge top drugs back with interestSet to generate working data frame:
 interestSet_topN_merge <- merge(interestSetDF, topNdrugs, by.x="DrugName", by.y="Var1")
 
@@ -157,17 +161,34 @@ drugsetDT$prescription_dateplustime1 <- (drugsetDT$prescription_dateplustime1 - 
 # combinations_4 <- as.data.frame(combinations(length(drugNamesVector), 4, drugNamesVector))
 # combinations_5 <- as.data.frame(combinations(length(drugNamesVector), 5, drugNamesVector))
 
-sequence <- seq(0,1 , 0.1)
+sequence <- seq(0, 1 , 0.001)
 
 returnIntervals <- function(inputSet, sequence) {
   
-  interimSet <- inputSet[, interv := cut(prescription_dateplustime1, sequence)][, .(drugs = (unique(DrugName))), by = interv]
+      ## add nil values to fill time slots without any drugs
+      nilFrame <- as.data.frame(matrix(nrow = length(sequence), ncol = ncol(inputSet)))
+      colnames(nilFrame) <- colnames(inputSet)
+      
+      nilFrame$DrugName <- nilValue
+      nilFrame$prescription_dateplustime1 <- sequence
+      
+      outputSet <- rbind(nilFrame, inputSet)
+      
+  ## generate drug words
+      
+  interimSet <- outputSet
+  
+  interimSet <- interimSet[, interv := cut(prescription_dateplustime1, sequence)][, .(drugs = (unique(DrugName))), by = interv]
   interimSet[, drugWord := paste(drugs, collapse = ''), by = interv]
   
   interimSet <- interimSet[order(interimSet$interv), ]
   interimSet[, drugSequenceNumber := seq(1, .N, 1), by = interv]
   
   reportSet <- interimSet[drugSequenceNumber == 1]
+  reportSet$drugWord <- ifelse(substr(reportSet$drugWord,1,3) == 'nil' & nchar(reportSet$drugWord) == 3, reportSet$drugWord, substr(reportSet$drugWord,4,nchar(reportSet$drugWord)))
+  
+  reportSet <- reportSet[1:nrow(reportSet)-1, ]
+  reportSet$intervalNumber <- c(1:nrow(reportSet))
   
   
 }
@@ -183,6 +204,7 @@ addNilDrugReferences <- function(inputSet, nilValue) {
   outputSet <- rbind(nilFrame, inputSet)
   
   return(outputSet)
+  
 }
 
 
