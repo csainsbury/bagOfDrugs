@@ -137,7 +137,7 @@ topNdrugs_DrugNames <- topNdrugs_DrugNames[order(topNdrugs_DrugNames$Freq), ]
 topNdrugs <- tail(topNdrugs_DrugNames, n)
 
 # merge top drugs back with interestSet to generate working data frame:
-interestSet_topN_merge <- merge(interestSet, topNdrugs, by.x="DrugName", by.y="Var1")
+interestSet_topN_merge <- merge(interestSetDF, topNdrugs, by.x="DrugName", by.y="Var1")
 
 ## start drug data manipulation
 
@@ -149,4 +149,41 @@ drugsetDT_original <-drugsetDT # preserve an original full dataset incase needed
 # scale time to 0 to 1 range
 drugsetDT$prescription_dateplustime1.original <- drugsetDT$prescription_dateplustime1
 drugsetDT$prescription_dateplustime1 <- (drugsetDT$prescription_dateplustime1 - min(drugsetDT$prescription_dateplustime1)) / (max(drugsetDT$prescription_dateplustime1) - min(drugsetDT$prescription_dateplustime1))
+
+# # combinations
+# drugNamesVector <- drugsetDT$DrugName
+# combinations_2 <- as.data.frame(combinations(length(drugNamesVector), 2, drugNamesVector))
+# combinations_3 <- as.data.frame(combinations(length(drugNamesVector), 3, drugNamesVector))
+# combinations_4 <- as.data.frame(combinations(length(drugNamesVector), 4, drugNamesVector))
+# combinations_5 <- as.data.frame(combinations(length(drugNamesVector), 5, drugNamesVector))
+
+sequence <- seq(0,1 , 0.1)
+
+returnIntervals <- function(inputSet, sequence) {
+  
+  interimSet <- inputSet[, interv := cut(prescription_dateplustime1, sequence)][, .(drugs = (unique(DrugName))), by = interv]
+  interimSet[, drugWord := paste(drugs, collapse = ''), by = interv]
+  
+  interimSet <- interimSet[order(interimSet$interv), ]
+  interimSet[, drugSequenceNumber := seq(1, .N, 1), by = interv]
+  
+  reportSet <- interimSet[drugSequenceNumber == 1]
+  
+  
+}
+
+addNilDrugReferences <- function(inputSet, nilValue) {
+  
+  nilFrame <- as.data.frame(matrix(nrow = 10, ncol = ncol(inputSet)))
+  colnames(nilFrame) <- colnames(inputSet)
+  
+  nilFrame$DrugName <- nilValue
+  nilFrame$prescription_dateplustime1 <- seq(0, 1 - 0.1, 0.1)
+  
+  outputSet <- rbind(nilFrame, inputSet)
+  
+  return(outputSet)
+}
+
+
 
