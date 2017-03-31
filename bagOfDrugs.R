@@ -156,54 +156,50 @@ drugsetDT$prescription_dateplustime1 <- (drugsetDT$prescription_dateplustime1 - 
 
 drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
 
-sequence <- seq(0, 1 , 0.1)
-
-# generate bag of drugs frame
-drugWordFrame <- as.data.frame(matrix(nrow = length(unique(drugsetDT$LinkId)), ncol = (length(sequence)-1) ))
-
-# function to generate drugwords for each time interval
-returnIntervals <- function(inputSet, sequence) {
-  
-      ## add nil values to fill time slots without any drugs
-      nilFrame <- as.data.frame(matrix(nrow = length(sequence), ncol = ncol(inputSet)))
-      colnames(nilFrame) <- colnames(inputSet)
+## main drug sentence code here
+    # set time bins
+    sequence <- seq(0, 1 , 0.1)
+    
+    # generate bag of drugs frame
+    drugWordFrame <- as.data.frame(matrix(nrow = length(unique(drugsetDT$LinkId)), ncol = (length(sequence)-1) ))
+    colnames(drugWordFrame) <- c(1:length(sequence)-1)
+    
+    # function to generate drugwords for each time interval
+    returnIntervals <- function(DrugName, prescription_dateplustime1, sequence, id) {
       
-      nilFrame$DrugName <- nilValue
-      nilFrame$prescription_dateplustime1 <- sequence
+          inputSet <- data.table(DrugName, prescription_dateplustime1)
       
-      outputSet <- rbind(nilFrame, inputSet)
+          ## add nil values to fill time slots without any drugs
+          nilFrame <- as.data.frame(matrix(nrow = length(sequence), ncol = ncol(inputSet)))
+          colnames(nilFrame) <- colnames(inputSet)
+          
+          nilFrame$DrugName <- nilValue
+          nilFrame$prescription_dateplustime1 <- sequence
+          
+          outputSet <- rbind(nilFrame, inputSet)
+          
+      ## generate drug words
+          
+      interimSet <- outputSet
       
-  ## generate drug words
+      interimSet <- interimSet[, interv := cut(prescription_dateplustime1, sequence)][, .(drugs = (unique(DrugName))), by = interv]
+      interimSet[, drugWord := paste(drugs, collapse = ''), by = interv]
       
-  interimSet <- outputSet
-  
-  interimSet <- interimSet[, interv := cut(prescription_dateplustime1, sequence)][, .(drugs = (unique(DrugName))), by = interv]
-  interimSet[, drugWord := paste(drugs, collapse = ''), by = interv]
-  
-  interimSet <- interimSet[order(interimSet$interv), ]
-  interimSet[, drugSequenceNumber := seq(1, .N, 1), by = interv]
-  
-  reportSet <- interimSet[drugSequenceNumber == 1]
-  reportSet$drugWord <- ifelse(substr(reportSet$drugWord,1,3) == 'nil' & nchar(reportSet$drugWord) == 3, reportSet$drugWord, substr(reportSet$drugWord,4,nchar(reportSet$drugWord)))
-  
-  reportSet <- reportSet[1:nrow(reportSet)-1, ]
-  reportSet$intervalNumber <- c(1:nrow(reportSet))
-  
-}
+      interimSet <- interimSet[order(interimSet$interv), ]
+      interimSet[, drugSequenceNumber := seq(1, .N, 1), by = interv]
+      
+      reportSet <- interimSet[drugSequenceNumber == 1]
+      reportSet$drugWord <- ifelse(substr(reportSet$drugWord,1,3) == 'nil' & nchar(reportSet$drugWord) == 3, reportSet$drugWord, substr(reportSet$drugWord,4,nchar(reportSet$drugWord)))
+      
+      reportSet <- reportSet[1:nrow(reportSet)-1, ]
+      reportSet$intervalNumber <- c(1:nrow(reportSet))
+      
+      drugWordFrame[id, ] <- reportSet$drugWord
+      
+    }
+    
+    drugsetDT[, returnIntervals(DrugName, prescription_dateplustime1, sequence, id), by = LinkId]
 
-addNilDrugReferences <- function(inputSet, nilValue) {
-  
-  nilFrame <- as.data.frame(matrix(nrow = 10, ncol = ncol(inputSet)))
-  colnames(nilFrame) <- colnames(inputSet)
-  
-  nilFrame$DrugName <- nilValue
-  nilFrame$prescription_dateplustime1 <- seq(0, 1 - 0.1, 0.1)
-  
-  outputSet <- rbind(nilFrame, inputSet)
-  
-  return(outputSet)
-  
-}
-
+## need to convert words to numbers - use text proc library, and feed into rnn
 
 
