@@ -154,6 +154,12 @@ drugsetDT_original <-drugsetDT # preserve an original full dataset incase needed
 drugsetDT$prescription_dateplustime1.original <- drugsetDT$prescription_dateplustime1
 drugsetDT$prescription_dateplustime1 <- (drugsetDT$prescription_dateplustime1 - min(drugsetDT$prescription_dateplustime1)) / (max(drugsetDT$prescription_dateplustime1) - min(drugsetDT$prescription_dateplustime1))
 
+# drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
+
+# read out and in for testing
+# write.table(drugsetDT, file = "~/R/GlCoSy/MLsource/drugsetDT.csv", sep=",")
+# drugsetDT <- read.csv("~/R/GlCoSy/MLsource/drugsetDT.csv", stringsAsFactors = F, row.names = NULL); drugsetDT$row.names <- NULL; drugsetDT$diffLinkId <- NULL; drugsetDT <- data.table(drugsetDT)
+
 drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
 
 ## main drug sentence code here
@@ -162,10 +168,12 @@ drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
     
     # generate bag of drugs frame
     drugWordFrame <- as.data.frame(matrix(nrow = length(unique(drugsetDT$LinkId)), ncol = (length(sequence)-1) ))
-    colnames(drugWordFrame) <- c(1:length(sequence)-1)
+    colnames(drugWordFrame) <- c(1:(length(sequence)-1))
     
     # function to generate drugwords for each time interval
     returnIntervals <- function(DrugName, prescription_dateplustime1, sequence, id) {
+      
+      # DrugName <- subset(drugsetDT, id == 1)$DrugName; prescription_dateplustime1 <- subset(drugsetDT, id == 1)$prescription_dateplustime1; id = 1
       
           inputSet <- data.table(DrugName, prescription_dateplustime1)
       
@@ -173,7 +181,7 @@ drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
           nilFrame <- as.data.frame(matrix(nrow = length(sequence), ncol = ncol(inputSet)))
           colnames(nilFrame) <- colnames(inputSet)
           
-          nilFrame$DrugName <- nilValue
+          nilFrame$DrugName <- 'nil'
           nilFrame$prescription_dateplustime1 <- sequence
           
           outputSet <- rbind(nilFrame, inputSet)
@@ -194,12 +202,47 @@ drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
       reportSet <- reportSet[1:nrow(reportSet)-1, ]
       reportSet$intervalNumber <- c(1:nrow(reportSet))
       
-      drugWordFrame[id, ] <- reportSet$drugWord
+#      print(reportSet$drugWord)
       
+      return(reportSet$drugWord)
+      
+
     }
     
-    drugsetDT[, returnIntervals(DrugName, prescription_dateplustime1, sequence, id), by = LinkId]
+    for (j in seq(1, max(drugsetDT$id), )) {
+      
+      if(j%%100 == 0) {print(j)}
+      
+      injectionSet <- drugsetDT[id == j]
+      drugWordFrame[j, ] <- returnIntervals(injectionSet$DrugName, injectionSet$prescription_dateplustime1, sequence, j)
+    }
+    
+    # write.table(drugWordFrame, file = "~/R/GlCoSy/MLsource/drugWordFrame.csv", sep=",")
+    # drugWordFrame <- read.csv("~/R/GlCoSy/MLsource/drugWordFrame.csv", stringsAsFactors = F, row.names = NULL); drugWordFrame$row.names <- NULL
+    
+    # set up drug sentences for analysis
+    drugSentenceFrame <- as.data.frame(matrix(nrow = nrow(drugWordFrame), ncol = 1))
+    colnames(drugSentenceFrame) <- c("drugSentence")
+    
+    vectorWords <- as.vector(as.matrix(drugWordFrame))
+    vectorNumbers <- as.numeric(as.factor(x))
+    lookup <- data.frame(vectorWords, vectorNumbers)
+    lookup <- unique(lookup)
+    lookup <- data.table(lookup)
+    
+    numericalDrugsFrame <- drugWordFrame
 
+      for (r in seq(1, nrow(numericalDrugsFrame), 1)) {
+        if (r%%100 == 0) {print(r)}
+        for (c in seq(1, ncol(numericalDrugsFrame), 1)) {
+          numericalDrugsFrame[r,c] <- lookup[vectorWords == numericalDrugsFrame[r,c]]$vectorNumbers
+        }
+      }
+    
+    
+    
+    
+    
 ## need to convert words to numbers - use text proc library, and feed into rnn
 
 
