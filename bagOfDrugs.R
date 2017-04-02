@@ -1,6 +1,6 @@
-source("~/R/_workingDirectory/_perAdmissionRewriteDataTableFunctions.R")
-library(gtools)
-library(igraph)
+# source("~/R/_workingDirectory/_perAdmissionRewriteDataTableFunctions.R")
+# library(gtools)
+# library(igraph)
 library(data.table)
 
 id_per_location <- function(ID) {
@@ -123,8 +123,8 @@ interestSetDT <- data.table(interestSet)
 interestSetDT$prescription_dateplustime1 <- returnUnixDateTime(interestSetDT$PrescriptionDateTime)
 
 # limit analysis period of interest to 10y period 1/1/2005 - 1/1/2015
-interestSetDT <- interestSetDT[prescription_dateplustime1 > returnUnixDateTime('2006-01-01') &
-                         prescription_dateplustime1 < returnUnixDateTime('2017-01-01')]
+interestSetDT <- interestSetDT[prescription_dateplustime1 > returnUnixDateTime('2005-01-01') &
+                         prescription_dateplustime1 < returnUnixDateTime('2015-01-01')]
 
 interestSetDF <- data.frame(interestSetDT)
 
@@ -157,14 +157,19 @@ drugsetDT$prescription_dateplustime1 <- (drugsetDT$prescription_dateplustime1 - 
 # drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
 
 # read out and in for testing
-# write.table(drugsetDT, file = "~/R/GlCoSy/MLsource/drugsetDT.csv", sep=",")
+# write.table(drugsetDT, file = "~/R/GlCoSy/MLsource/drugsetDT_2005to15.csv", sep=",")
 # drugsetDT <- read.csv("~/R/GlCoSy/MLsource/drugsetDT.csv", stringsAsFactors = F, row.names = NULL); drugsetDT$row.names <- NULL; drugsetDT$diffLinkId <- NULL; drugsetDT <- data.table(drugsetDT)
 
 drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
 
+featureFrame <- as.data.frame(matrix(nrow = length(unique(drugsetDT$LinkId)), ncol = 1))
+colnames(featureFrame) <- c("LinkId")
+
+featureFrame$LinkId <- unique(drugsetDT$LinkId)
+
 ## main drug sentence code here
     # set time bins
-    sequence <- seq(0, 1 , 0.1)
+    sequence <- seq(0, 1 , 0.05)
     
     # generate bag of drugs frame
     drugWordFrame <- as.data.frame(matrix(nrow = length(unique(drugsetDT$LinkId)), ncol = (length(sequence)-1) ))
@@ -225,13 +230,14 @@ drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
     colnames(drugSentenceFrame) <- c("drugSentence")
     
     vectorWords <- as.vector(as.matrix(drugWordFrame))
-    vectorNumbers <- as.numeric(as.factor(x))
+    vectorNumbers <- as.numeric(as.factor(vectorWords))
     lookup <- data.frame(vectorWords, vectorNumbers)
     lookup <- unique(lookup)
     lookup <- data.table(lookup)
     
     numericalDrugsFrame <- drugWordFrame
 
+    # encode individul words as numbers for sequence analysis
       for (r in seq(1, nrow(numericalDrugsFrame), 1)) {
         if (r%%100 == 0) {print(r)}
         for (c in seq(1, ncol(numericalDrugsFrame), 1)) {
@@ -239,7 +245,22 @@ drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
         }
       }
     
+    # write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/numericalDrugsFrame.csv", sep=",")
+    # numericalDrugsFrame <- read.csv("~/R/GlCoSy/MLsource/numericalDrugsFrame_50.csv", stringsAsFactors = F, row.names = NULL); numericalDrugsFrame$row.names <- NULL
     
+    # runif(10, 0, 1)
+    # random y_train and y_test
+    random_y <- runif(nrow(numericalDrugsFrame), 0, 1)
+    random_y <- ifelse(random_y < 0.5, 0, 1)
+    
+    write.table(random_y, file = "~/R/GlCoSy/MLsource/random_y.csv", sep = ",")
+    
+    # generate(test_train)
+    X_train <- numericalDrugsFrame[1:1000, ]
+    y_train <- random_y[1:1000]
+    
+    X_test <- numericalDrugsFrame[1001:2001, ]
+    y_test <- random_y[1001:2001]
     
     
     
