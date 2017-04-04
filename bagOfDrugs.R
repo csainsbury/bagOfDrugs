@@ -260,11 +260,13 @@ drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
         }
       }
     
+    y_vector <- drugWordFrame_forAnalysis$isDead
+    
     # write out sequence for analysis
     write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/numericalDrugsFrame_20.csv", sep=",", row.names = FALSE)
     
     # write out dep variable (y)
-    write.table(drugWordFrame_forAnalysis, file = "~/R/GlCoSy/MLsource/3y_mortality_y.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector, file = "~/R/GlCoSy/MLsource/3y_mortality_y.csv", sep = ",", row.names = FALSE)
     
     
     
