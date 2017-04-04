@@ -162,10 +162,13 @@ drugsetDT$prescription_dateplustime1 <- (drugsetDT$prescription_dateplustime1 - 
 
 drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
 
-featureFrame <- as.data.frame(matrix(nrow = length(unique(drugsetDT$LinkId)), ncol = 1))
-colnames(featureFrame) <- c("LinkId")
 
-featureFrame$LinkId <- unique(drugsetDT$LinkId)
+    
+    # generate frame of IDs in correnct order to use to generate outcome frame
+    featureFrame <- as.data.frame(matrix(nrow = length(unique(drugsetDT$LinkId)), ncol = 1))
+    colnames(featureFrame) <- c("LinkId")
+    
+    featureFrame$LinkId <- unique(drugsetDT$LinkId)
 
 ## main drug sentence code here
     # set time bins
@@ -245,8 +248,21 @@ featureFrame$LinkId <- unique(drugsetDT$LinkId)
         }
       }
     
-    # write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/numericalDrugsFrame.csv", sep=",")
-    # numericalDrugsFrame <- read.csv("~/R/GlCoSy/MLsource/numericalDrugsFrame_50.csv", stringsAsFactors = F, row.names = NULL); numericalDrugsFrame$row.names <- NULL
+    
+    deathData <- read.csv("~/R/GlCoSy/SDsource/diagnosisDateDeathDate.txt", sep=",")
+    deathData$unix_deathDate <- returnUnixDateTime(deathData$DeathDate)
+    deathData$unix_deathDate[is.na(deathData$unix_deathDate)] <- 0
+    deathData$isDead <- ifelse(deathData$unix_deathDate > 0, 1, 0)
+    deathData$deadPostEndOfDrugData <- ifelse(deathData$isDead == 1 & deathData$unix_deathDate > returnUnixDateTime("2015-01-01"), 1, 0) 
+    
+    featureFrame_deathMerge <- merge(featureFrame, deathData, by.x= "LinkId", by.y = "LinkId", all.x = TRUE)
+    death_outcome <- featureFrame_deathMerge$deadPostEndOfDrugData
+    death_outcome[is.na(death_outcome)] <- 0
+    
+    write.table(death_outcome, file = "~/R/GlCoSy/MLsource/deathOutcome_for_numericalDrugsFrame_20.csv", sep = ",")
+    
+    # write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/numericalDrugsFrame_20.csv", sep=",", row.names = FALSE)
+    # numericalDrugsFrame <- read.csv("~/R/GlCoSy/MLsource/numericalDrugsFrame_20.csv", stringsAsFactors = F, row.names = FALSE); numericalDrugsFrame$row.names <- NULL
     
     # runif(10, 0, 1)
     # random y_train and y_test
