@@ -109,6 +109,12 @@ findSimilarDrugs <- function(inputFrame) {
 # generate node and link files
 drugDataSet <- read.csv("~/R/GlCoSy/SDsource/Export_all_diabetes_drugs.txt",header=TRUE,row.names=NULL)
 
+# load and process mortality data
+deathData <- read.csv("~/R/GlCoSy/SDsource/diagnosisDateDeathDate.txt", sep=",")
+deathData$unix_deathDate <- returnUnixDateTime(deathData$DeathDate)
+deathData$unix_deathDate[is.na(deathData$unix_deathDate)] <- 0
+deathData$isDead <- ifelse(deathData$unix_deathDate > 0, 1, 0)
+
 # drugDataSet <- read.csv("~/R/GlCoSy/SDsource/test_drug_out_second100kIDs_allTime.txt",header=TRUE,row.names=NULL)
 drugDataSet$BNFCode <- as.character(drugDataSet$BNFCode)
 drugDataSet$DrugName <- as.character(drugDataSet$DrugName)
@@ -162,26 +168,20 @@ drugsetDT$prescription_dateplustime1 <- (drugsetDT$prescription_dateplustime1 - 
 
 drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
 
+# drugsetDT <- drugsetDT[prescription_dateplustime1.original > returnUnixDateTime('2005-01-01') & prescription_dateplustime1.original < returnUnixDateTime('2015-01-01')]
 
-    
-    # generate frame of IDs in correnct order to use to generate outcome frame
-    featureFrame <- as.data.frame(matrix(nrow = length(unique(drugsetDT$LinkId)), ncol = 1))
-    colnames(featureFrame) <- c("LinkId")
-    
-    featureFrame$LinkId <- unique(drugsetDT$LinkId)
-
-## main drug sentence code here
     # set time bins
     sequence <- seq(0, 1 , 0.05)
     
     # generate bag of drugs frame
     drugWordFrame <- as.data.frame(matrix(nrow = length(unique(drugsetDT$LinkId)), ncol = (length(sequence)-1) ))
     colnames(drugWordFrame) <- c(1:(length(sequence)-1))
+    drugWordFrame$LinkId <- 0
     
     # function to generate drugwords for each time interval
-    returnIntervals <- function(DrugName, prescription_dateplustime1, sequence, id) {
+    returnIntervals <- function(LinkId, DrugName, prescription_dateplustime1, sequence, id) {
       
-      # DrugName <- subset(drugsetDT, id == 1)$DrugName; prescription_dateplustime1 <- subset(drugsetDT, id == 1)$prescription_dateplustime1; id = 1
+      # DrugName <- subset(drugsetDT, id == 2)$DrugName; prescription_dateplustime1 <- subset(drugsetDT, id == 2)$prescription_dateplustime1; id = 2; LinkId <- subset(drugsetDT, id == 2)$LinkId[1]
       
           inputSet <- data.table(DrugName, prescription_dateplustime1)
       
@@ -212,7 +212,7 @@ drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
       
 #      print(reportSet$drugWord)
       
-      return(reportSet$drugWord)
+      return(c(reportSet$drugWord, LinkId[1]))
       
 
     }
@@ -222,23 +222,35 @@ drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
       if(j%%100 == 0) {print(j)}
       
       injectionSet <- drugsetDT[id == j]
-      drugWordFrame[j, ] <- returnIntervals(injectionSet$DrugName, injectionSet$prescription_dateplustime1, sequence, j)
+      drugWordFrame[j, ] <- returnIntervals(injectionSet$LinkId, injectionSet$DrugName, injectionSet$prescription_dateplustime1, sequence, j)
     }
     
-    # write.table(drugWordFrame, file = "~/R/GlCoSy/MLsource/drugWordFrame.csv", sep=",")
+    # write.table(drugWordFrame, file = "~/R/GlCoSy/MLsource/drugWordFrame_withID_2005_2015.csv", sep=",")
     # drugWordFrame <- read.csv("~/R/GlCoSy/MLsource/drugWordFrame.csv", stringsAsFactors = F, row.names = NULL); drugWordFrame$row.names <- NULL
     
+      # here do analysis to select rows (IDs) for later analysis
+      
+      # mortality outcome at 2017-01-01
+      drugWordFrame_mortality <- merge(drugWordFrame, deathData, by.x = "LinkId", by.y= "LinkId")
+      # remove those dead before end of FU
+      drugWordFrame_mortality <- subset(drugWordFrame_mortality, isDead == 0 | (isDead == 1 & unix_deathDate > returnUnixDateTime("2015-01-01")) )
+    
     # set up drug sentences for analysis
-    drugSentenceFrame <- as.data.frame(matrix(nrow = nrow(drugWordFrame), ncol = 1))
+      
+      drugWordFrame_forAnalysis <- drugWordFrame_mortality
+      
+      drugWordFrame_drugNames <- drugWordFrame_forAnalysis[, 2:(1+(length(sequence)-1)) ]
+      
+    drugSentenceFrame <- as.data.frame(matrix(nrow = nrow(drugWordFrame_forAnalysis), ncol = 1))
     colnames(drugSentenceFrame) <- c("drugSentence")
     
-    vectorWords <- as.vector(as.matrix(drugWordFrame))
+    vectorWords <- as.vector(as.matrix(drugWordFrame_drugNames))
     vectorNumbers <- as.numeric(as.factor(vectorWords))
     lookup <- data.frame(vectorWords, vectorNumbers)
     lookup <- unique(lookup)
     lookup <- data.table(lookup)
     
-    numericalDrugsFrame <- drugWordFrame
+    numericalDrugsFrame <- drugWordFrame_drugNames
 
     # encode individul words as numbers for sequence analysis
       for (r in seq(1, nrow(numericalDrugsFrame), 1)) {
@@ -248,36 +260,37 @@ drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
         }
       }
     
+    # write out sequence for analysis
+    write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/numericalDrugsFrame_20.csv", sep=",", row.names = FALSE)
     
-    deathData <- read.csv("~/R/GlCoSy/SDsource/diagnosisDateDeathDate.txt", sep=",")
-    deathData$unix_deathDate <- returnUnixDateTime(deathData$DeathDate)
-    deathData$unix_deathDate[is.na(deathData$unix_deathDate)] <- 0
-    deathData$isDead <- ifelse(deathData$unix_deathDate > 0, 1, 0)
-    deathData$deadPostEndOfDrugData <- ifelse(deathData$isDead == 1 & deathData$unix_deathDate > returnUnixDateTime("2015-01-01"), 1, 0) 
+    # write out dep variable (y)
+    write.table(drugWordFrame_forAnalysis, file = "~/R/GlCoSy/MLsource/3y_mortality_y.csv", sep = ",", row.names = FALSE)
     
-    featureFrame_deathMerge <- merge(featureFrame, deathData, by.x= "LinkId", by.y = "LinkId", all.x = TRUE)
-    death_outcome <- featureFrame_deathMerge$deadPostEndOfDrugData
-    death_outcome[is.na(death_outcome)] <- 0
     
-    write.table(death_outcome, file = "~/R/GlCoSy/MLsource/deathOutcome_for_numericalDrugsFrame_20.csv", sep = ",")
     
-    # write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/numericalDrugsFrame_20.csv", sep=",", row.names = FALSE)
-    # numericalDrugsFrame <- read.csv("~/R/GlCoSy/MLsource/numericalDrugsFrame_20.csv", stringsAsFactors = F, row.names = FALSE); numericalDrugsFrame$row.names <- NULL
-    
-    # runif(10, 0, 1)
-    # random y_train and y_test
-    random_y <- runif(nrow(numericalDrugsFrame), 0, 1)
-    random_y <- ifelse(random_y < 0.5, 0, 1)
-    
-    write.table(random_y, file = "~/R/GlCoSy/MLsource/random_y.csv", sep = ",")
-    
-    # generate(test_train)
-    X_train <- numericalDrugsFrame[1:1000, ]
-    y_train <- random_y[1:1000]
-    
-    X_test <- numericalDrugsFrame[1001:2001, ]
-    y_test <- random_y[1001:2001]
-    
+    # featureFrame_deathMerge <- merge(featureFrame, deathData, by.x= "LinkId", by.y = "LinkId", all.x = TRUE)
+    # death_outcome <- featureFrame_deathMerge$deadPostEndOfDrugData
+    # death_outcome[is.na(death_outcome)] <- 0
+    # 
+    # write.table(death_outcome, file = "~/R/GlCoSy/MLsource/deathOutcome_for_numericalDrugsFrame_20.csv", sep = ",")
+    # 
+    # # write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/numericalDrugsFrame_20.csv", sep=",", row.names = FALSE)
+    # # numericalDrugsFrame <- read.csv("~/R/GlCoSy/MLsource/numericalDrugsFrame_20.csv", stringsAsFactors = F, row.names = FALSE); numericalDrugsFrame$row.names <- NULL
+    # 
+    # # runif(10, 0, 1)
+    # # random y_train and y_test
+    # random_y <- runif(nrow(numericalDrugsFrame), 0, 1)
+    # random_y <- ifelse(random_y < 0.5, 0, 1)
+    # 
+    # write.table(random_y, file = "~/R/GlCoSy/MLsource/random_y.csv", sep = ",")
+    # 
+    # # generate(test_train)
+    # X_train <- numericalDrugsFrame[1:1000, ]
+    # y_train <- random_y[1:1000]
+    # 
+    # X_test <- numericalDrugsFrame[1001:2001, ]
+    # y_test <- random_y[1001:2001]
+    # 
     
     
 ## need to convert words to numbers - use text proc library, and feed into rnn
