@@ -17,10 +17,10 @@ top_words = 5000
 
 import pandas as pd
 # import numpy as np
-dataset = pd.read_csv('./numericalDrugsFrame_20.csv')
+dataset = pd.read_csv('./numericalDrugsFrame_20_chained_y.csv')
 drug_dataset = dataset.values
 
-random_y_set = pd.read_csv('./deathOutcome_for_numericalDrugsFrame_20.csv')
+random_y_set = pd.read_csv('./3y_mortality_y_for_numericalDrugsFrame_20_chained_y.csv')
 random_y = random_y_set.values
 
 X_train = drug_dataset[0:35327]
