@@ -114,6 +114,7 @@ deathData <- read.csv("~/R/GlCoSy/SDsource/diagnosisDateDeathDate.txt", sep=",")
 deathData$unix_deathDate <- returnUnixDateTime(deathData$DeathDate)
 deathData$unix_deathDate[is.na(deathData$unix_deathDate)] <- 0
 deathData$isDead <- ifelse(deathData$unix_deathDate > 0, 1, 0)
+deathData$unix_diagnosisDate <- returnUnixDateTime(deathData$DateOfDiagnosisDiabetes_Date)
 
 # drugDataSet <- read.csv("~/R/GlCoSy/SDsource/test_drug_out_second100kIDs_allTime.txt",header=TRUE,row.names=NULL)
 drugDataSet$BNFCode <- as.character(drugDataSet$BNFCode)
@@ -128,9 +129,11 @@ interestSet <- findSimilarDrugs(interestSet)
 interestSetDT <- data.table(interestSet)
 interestSetDT$prescription_dateplustime1 <- returnUnixDateTime(interestSetDT$PrescriptionDateTime)
 
-# limit analysis period of interest to 10y period 1/1/2005 - 1/1/2015
-interestSetDT <- interestSetDT[prescription_dateplustime1 > returnUnixDateTime('2005-01-01') &
-                         prescription_dateplustime1 < returnUnixDateTime('2015-01-01')]
+# set runin period of interest
+startRuninPeriod <- '2010-01-01'
+endRuninPeriod   <- '2015-01-01'
+interestSetDT <- interestSetDT[prescription_dateplustime1 > returnUnixDateTime(startRuninPeriod) &
+                         prescription_dateplustime1 < returnUnixDateTime(endRuninPeriod)]
 
 interestSetDF <- data.frame(interestSetDT)
 
@@ -149,7 +152,9 @@ topNdrugs$Var1 <- gsub("-", "", topNdrugs$Var1, fixed = TRUE)
 # merge top drugs back with interestSet to generate working data frame:
 interestSet_topN_merge <- merge(interestSetDF, topNdrugs, by.x="DrugName", by.y="Var1")
 
+###############################
 ## start drug data manipulation
+###############################
 
 drugsetDT <- data.table(interestSet_topN_merge)
 drugsetDT$prescription_dateplustime1 <- returnUnixDateTime(drugsetDT$PrescriptionDateTime)
@@ -159,8 +164,9 @@ drugsetDT_original <-drugsetDT # preserve an original full dataset incase needed
 # scale time to 0 to 1 range
 drugsetDT$prescription_dateplustime1.original <- drugsetDT$prescription_dateplustime1
 drugsetDT$prescription_dateplustime1 <- (drugsetDT$prescription_dateplustime1 - min(drugsetDT$prescription_dateplustime1)) / (max(drugsetDT$prescription_dateplustime1) - min(drugsetDT$prescription_dateplustime1))
-
-# drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
+    drugsetDT$LinkId<-as.numeric(levels(drugsetDT$LinkId))[drugsetDT$LinkId]
+    drugsetDT$LinkId[is.na(drugsetDT$LinkId)] <- 0
+    drugsetDT <-  drugsetDT[LinkId > 0]
 
 # read out and in for testing
 # write.table(drugsetDT, file = "~/R/GlCoSy/MLsource/drugsetDT_2005to15.csv", sep=",")
@@ -169,6 +175,7 @@ drugsetDT$prescription_dateplustime1 <- (drugsetDT$prescription_dateplustime1 - 
 drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
 
 # drugsetDT <- drugsetDT[prescription_dateplustime1.original > returnUnixDateTime('2005-01-01') & prescription_dateplustime1.original < returnUnixDateTime('2015-01-01')]
+
 
     # set time bins
     sequence <- seq(0, 1 , 0.05)
@@ -181,7 +188,7 @@ drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
     # function to generate drugwords for each time interval
     returnIntervals <- function(LinkId, DrugName, prescription_dateplustime1, sequence, id) {
       
-      # DrugName <- subset(drugsetDT, id == 2)$DrugName; prescription_dateplustime1 <- subset(drugsetDT, id == 2)$prescription_dateplustime1; id = 2; LinkId <- subset(drugsetDT, id == 2)$LinkId[1]
+      # DrugName <- subset(drugsetDT, id == 2)$DrugName; prescription_dateplustime1 <- subset(drugsetDT, id == 2)$prescription_dateplustime1; id = 2; LinkId <- subset(drugsetDT, id == 2)$LinkId
       
           inputSet <- data.table(DrugName, prescription_dateplustime1)
       
@@ -233,7 +240,10 @@ drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
       # mortality outcome at 2017-01-01
       drugWordFrame_mortality <- merge(drugWordFrame, deathData, by.x = "LinkId", by.y= "LinkId")
       # remove those dead before end of FU
-      drugWordFrame_mortality <- subset(drugWordFrame_mortality, isDead == 0 | (isDead == 1 & unix_deathDate > returnUnixDateTime("2015-01-01")) )
+      # analysis frame = those who are not dead, or those who have died after the end of the runin period. ie all individuals in analysis alive at the end of the runin period
+      drugWordFrame_mortality <- subset(drugWordFrame_mortality, isDead == 0 | (isDead == 1 & unix_deathDate > returnUnixDateTime(endRuninPeriod)) )
+      # remove those diagnosed after the end of the runin period
+      drugWordFrame_mortality <- subset(drugWordFrame_mortality, unix_diagnosisDate <= returnUnixDateTime(endRuninPeriod) )
     
     # set up drug sentences for analysis
       
@@ -250,23 +260,23 @@ drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
     lookup <- unique(lookup)
     lookup <- data.table(lookup)
     
-    numericalDrugsFrame <- drugWordFrame_drugNames
-
-    # encode individul words as numbers for sequence analysis
-      for (r in seq(1, nrow(numericalDrugsFrame), 1)) {
-        if (r%%100 == 0) {print(r)}
-        for (c in seq(1, ncol(numericalDrugsFrame), 1)) {
-          numericalDrugsFrame[r,c] <- lookup[vectorWords == numericalDrugsFrame[r,c]]$vectorNumbers
+    # vectorised lookup table use
+        numericalDrugsFrame <- as.data.frame(matrix(0, nrow = nrow(drugWordFrame_drugNames), ncol = ncol(drugWordFrame_drugNames)))
+        
+        for (jj in seq(1, ncol(drugWordFrame_drugNames), 1)) {
+          
+          index <- match(drugWordFrame_drugNames[,jj], lookup$vectorWords)
+          numericalDrugsFrame[,jj] <- lookup$vectorNumbers[index]
+          
         }
-      }
     
     y_vector <- drugWordFrame_forAnalysis$isDead
     
     # write out sequence for analysis
-    write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/numericalDrugsFrame_20_chained_y.csv", sep=",", row.names = FALSE)
+    write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/numericalDrugsFrame_5Y_20_chained_y.csv", sep=",", row.names = FALSE)
     
     # write out dep variable (y)
-    write.table(y_vector, file = "~/R/GlCoSy/MLsource/3y_mortality_y_for_numericalDrugsFrame_20_chained_y.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector, file = "~/R/GlCoSy/MLsource/3y_mortality_y_for_numericalDrugsFrame_5Y_20_chained_y.csv", sep = ",", row.names = FALSE)
     
     
     
