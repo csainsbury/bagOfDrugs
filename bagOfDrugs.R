@@ -129,9 +129,14 @@ interestSet <- findSimilarDrugs(interestSet)
 interestSetDT <- data.table(interestSet)
 interestSetDT$prescription_dateplustime1 <- returnUnixDateTime(interestSetDT$PrescriptionDateTime)
 
+interestSetDT_original <- interestSetDT # run from here if altering runin period
+
 # set runin period of interest
-startRuninPeriod <- '2010-01-01'
-endRuninPeriod   <- '2015-01-01'
+startRuninPeriod <- '2002-01-01'
+endRuninPeriod   <- '2012-01-01'
+
+testDeathDate    <- '2013-01-01'
+
 interestSetDT <- interestSetDT[prescription_dateplustime1 > returnUnixDateTime(startRuninPeriod) &
                          prescription_dateplustime1 < returnUnixDateTime(endRuninPeriod)]
 
@@ -164,12 +169,12 @@ drugsetDT_original <-drugsetDT # preserve an original full dataset incase needed
 # scale time to 0 to 1 range
 drugsetDT$prescription_dateplustime1.original <- drugsetDT$prescription_dateplustime1
 drugsetDT$prescription_dateplustime1 <- (drugsetDT$prescription_dateplustime1 - min(drugsetDT$prescription_dateplustime1)) / (max(drugsetDT$prescription_dateplustime1) - min(drugsetDT$prescription_dateplustime1))
-    drugsetDT$LinkId<-as.numeric(levels(drugsetDT$LinkId))[drugsetDT$LinkId]
-    drugsetDT$LinkId[is.na(drugsetDT$LinkId)] <- 0
-    drugsetDT <-  drugsetDT[LinkId > 0]
+  # drugsetDT$LinkId<-as.numeric(levels(drugsetDT$LinkId))[drugsetDT$LinkId]
+  # drugsetDT$LinkId[is.na(drugsetDT$LinkId)] <- 0
+  # drugsetDT <-  drugsetDT[LinkId > 0]
 
 # read out and in for testing
-# write.table(drugsetDT, file = "~/R/GlCoSy/MLsource/drugsetDT_2005to15.csv", sep=",")
+# write.table(drugsetDT, file = "~/R/GlCoSy/MLsource/drugsetDT_2002to12.csv", sep=",", row.names = FALSE)
 # drugsetDT <- read.csv("~/R/GlCoSy/MLsource/drugsetDT.csv", stringsAsFactors = F, row.names = NULL); drugsetDT$row.names <- NULL; drugsetDT$diffLinkId <- NULL; drugsetDT <- data.table(drugsetDT)
 
 drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
@@ -178,7 +183,7 @@ drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
 
 
     # set time bins
-    sequence <- seq(0, 1 , 0.05)
+    sequence <- seq(0, 1 , (1/40)) # in 3 month blocks
     
     # generate bag of drugs frame
     drugWordFrame <- as.data.frame(matrix(nrow = length(unique(drugsetDT$LinkId)), ncol = (length(sequence)-1) ))
@@ -271,12 +276,24 @@ drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
         }
     
     y_vector <- drugWordFrame_forAnalysis$isDead
+    y_vector_isType1 <- ifelse(drugWordFrame_forAnalysis$DiabetesMellitusType_Mapped == 'Type 1 Diabetes Mellitus', 1, 0)
+    y_vector_deadAt_1_year <- ifelse(drugWordFrame_forAnalysis$isDead == 1 & drugWordFrame_forAnalysis$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (1 * 365.25 * 24 * 60 * 60)), 1, 0)
+    y_vector_deadAt_2_year <- ifelse(drugWordFrame_forAnalysis$isDead == 1 & drugWordFrame_forAnalysis$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (2 * 365.25 * 24 * 60 * 60)), 1, 0)
+    y_vector_deadAt_3_year <- ifelse(drugWordFrame_forAnalysis$isDead == 1 & drugWordFrame_forAnalysis$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (3 * 365.25 * 24 * 60 * 60)), 1, 0)
+    y_vector_deadAt_4_year <- ifelse(drugWordFrame_forAnalysis$isDead == 1 & drugWordFrame_forAnalysis$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (4 * 365.25 * 24 * 60 * 60)), 1, 0)
+    y_vector_deadAt_5_year <- ifelse(drugWordFrame_forAnalysis$isDead == 1 & drugWordFrame_forAnalysis$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (5 * 365.25 * 24 * 60 * 60)), 1, 0)
     
     # write out sequence for analysis
-    write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/numericalDrugsFrame_5Y_20_chained_y.csv", sep=",", row.names = FALSE)
+    write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/numericalDrugsFrame_10y_2002to2012_3mBins_chained_y.csv", sep=",", row.names = FALSE)
     
     # write out dep variable (y)
-    write.table(y_vector, file = "~/R/GlCoSy/MLsource/3y_mortality_y_for_numericalDrugsFrame_5Y_20_chained_y.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector, file = "~/R/GlCoSy/MLsource/5y_mortality_y_for_numericalDrugsFrame_10y_2002to2012_3mBins_chained_y.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_isType1, file = "~/R/GlCoSy/MLsource/isType1_for_numericalDrugsFrame_10y_2002to2012_3mBins_chained_y.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_1_year, file = "~/R/GlCoSy/MLsource/1y_mortality_y_for_numericalDrugsFrame_10y_2002to2012_3mBins_chained_y.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_2_year, file = "~/R/GlCoSy/MLsource/2y_mortality_y_for_numericalDrugsFrame_10y_2002to2012_3mBins_chained_y.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_3_year, file = "~/R/GlCoSy/MLsource/3y_mortality_y_for_numericalDrugsFrame_10y_2002to2012_3mBins_chained_y.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_4_year, file = "~/R/GlCoSy/MLsource/4y_mortality_y_for_numericalDrugsFrame_10y_2002to2012_3mBins_chained_y.csv", sep = ",", row.names = FALSE)
+    
     
     
     
