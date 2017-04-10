@@ -183,7 +183,12 @@ drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
 
 
     # set time bins
-    sequence <- seq(0, 1 , (1/40)) # in 3 month blocks
+    # 
+sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
+    # sequence <- seq(0, 1 , 0.1) # 10y runin - in 12 month blocks
+    # sequence <- seq(0, 1 , (1/125)) # 10y runin - in 3 month blocks
+    
+    
     
     # generate bag of drugs frame
     drugWordFrame <- as.data.frame(matrix(nrow = length(unique(drugsetDT$LinkId)), ncol = (length(sequence)-1) ))
@@ -249,6 +254,9 @@ drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
       drugWordFrame_mortality <- subset(drugWordFrame_mortality, isDead == 0 | (isDead == 1 & unix_deathDate > returnUnixDateTime(endRuninPeriod)) )
       # remove those diagnosed after the end of the runin period
       drugWordFrame_mortality <- subset(drugWordFrame_mortality, unix_diagnosisDate <= returnUnixDateTime(endRuninPeriod) )
+      # remove those diagnosed after the beginning of the runin period ie all in analysis have had DM throughout followup period
+      # drugWordFrame_mortality <- subset(drugWordFrame_mortality, unix_diagnosisDate > returnUnixDateTime(startRuninPeriod) )
+      
     
     # set up drug sentences for analysis
       
@@ -284,15 +292,15 @@ drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
     y_vector_deadAt_5_year <- ifelse(drugWordFrame_forAnalysis$isDead == 1 & drugWordFrame_forAnalysis$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (5 * 365.25 * 24 * 60 * 60)), 1, 0)
     
     # write out sequence for analysis
-    write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/numericalDrugsFrame_10y_2002to2012_3mBins_chained_y.csv", sep=",", row.names = FALSE)
+    write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/numericalDrugsFrame_10y_2002to2012_1mBins_chained_y.csv", sep=",", row.names = FALSE)
     
     # write out dep variable (y)
-    write.table(y_vector, file = "~/R/GlCoSy/MLsource/5y_mortality_y_for_numericalDrugsFrame_10y_2002to2012_3mBins_chained_y.csv", sep = ",", row.names = FALSE)
-    write.table(y_vector_isType1, file = "~/R/GlCoSy/MLsource/isType1_for_numericalDrugsFrame_10y_2002to2012_3mBins_chained_y.csv", sep = ",", row.names = FALSE)
-    write.table(y_vector_deadAt_1_year, file = "~/R/GlCoSy/MLsource/1y_mortality_y_for_numericalDrugsFrame_10y_2002to2012_3mBins_chained_y.csv", sep = ",", row.names = FALSE)
-    write.table(y_vector_deadAt_2_year, file = "~/R/GlCoSy/MLsource/2y_mortality_y_for_numericalDrugsFrame_10y_2002to2012_3mBins_chained_y.csv", sep = ",", row.names = FALSE)
-    write.table(y_vector_deadAt_3_year, file = "~/R/GlCoSy/MLsource/3y_mortality_y_for_numericalDrugsFrame_10y_2002to2012_3mBins_chained_y.csv", sep = ",", row.names = FALSE)
-    write.table(y_vector_deadAt_4_year, file = "~/R/GlCoSy/MLsource/4y_mortality_y_for_numericalDrugsFrame_10y_2002to2012_3mBins_chained_y.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector, file = "~/R/GlCoSy/MLsource/5y_mortality_y_for_numericalDrugsFrame_10y_2002to2012_1mBins_chained_y.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_isType1, file = "~/R/GlCoSy/MLsource/isType1_for_numericalDrugsFrame_10y_2002to2012_1mBins_chained_y.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_1_year, file = "~/R/GlCoSy/MLsource/1y_mortality_y_for_numericalDrugsFrame_10y_2002to2012_1mBins_chained_y.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_2_year, file = "~/R/GlCoSy/MLsource/2y_mortality_y_for_numericalDrugsFrame_10y_2002to2012_1mBins_chained_y.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_3_year, file = "~/R/GlCoSy/MLsource/3y_mortality_y_for_numericalDrugsFrame_10y_2002to2012_1mBins_chained_y.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_4_year, file = "~/R/GlCoSy/MLsource/4y_mortality_y_for_numericalDrugsFrame_10y_2002to2012_1mBins_chained_y.csv", sep = ",", row.names = FALSE)
     
     
     
