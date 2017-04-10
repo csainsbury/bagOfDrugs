@@ -174,8 +174,7 @@ returnIntervals <- function(LinkId, timeSeriesDataPoint, dateplustime1, sequence
   }
   
   return(c(outputVector, LinkId[1]))
-  
-  
+
 }
 
 for (j in seq(1, max(interestSetDT$id), )) {
@@ -185,6 +184,9 @@ for (j in seq(1, max(interestSetDT$id), )) {
   injectionSet <- interestSetDT[id == j]
   timesetWordFrame[j, ] <- returnIntervals(injectionSet$LinkId, injectionSet$timeSeriesDataPoint, injectionSet$dateplustime1, sequence, j)
 }
+
+# need to add method of handling NAs - turn to 0
+timesetWordFrame <- timesetWordFrame[is.na(timesetWordFrame)] <- 0
 
 # write.table(drugWordFrame, file = "~/R/GlCoSy/MLsource/drugWordFrame_withID_2005_2015.csv", sep=",")
 # drugWordFrame <- read.csv("~/R/GlCoSy/MLsource/drugWordFrame.csv", stringsAsFactors = F, row.names = NULL); drugWordFrame$row.names <- NULL
