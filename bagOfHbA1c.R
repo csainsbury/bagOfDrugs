@@ -137,61 +137,53 @@ interestSetDT$dateplustime1 <- (interestSetDT$dateplustime1 - min(interestSetDT$
 interestSetDT <- transform(interestSetDT,id=as.numeric(factor(LinkId)))
 
 # set time bins
+# sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
 # 
-sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
-# sequence <- seq(0, 1 , 0.1) # 10y runin - in 12 month blocks
+sequence <- seq(0, 1 , 0.1) # 10y runin - in 12 month blocks
 # sequence <- seq(0, 1 , (1/125)) # 10y runin - in 3 month blocks
 
 # generate bag of drugs frame
-drugWordFrame <- as.data.frame(matrix(nrow = length(unique(drugsetDT$LinkId)), ncol = (length(sequence)-1) ))
-colnames(drugWordFrame) <- c(1:(length(sequence)-1))
-drugWordFrame$LinkId <- 0
+timesetWordFrame <- as.data.frame(matrix(nrow = length(unique(interestSetDT$LinkId)), ncol = (length(sequence)-1) ))
+colnames(timesetWordFrame) <- c(1:(length(sequence)-1))
+timesetWordFrame$LinkId <- 0
 
 # function to generate drugwords for each time interval
-returnIntervals <- function(LinkId, DrugName, prescription_dateplustime1, sequence, id) {
+returnIntervals <- function(LinkId, timeSeriesDataPoint, dateplustime1, sequence, id) {
   
-  # DrugName <- subset(drugsetDT, id == 2)$DrugName; prescription_dateplustime1 <- subset(drugsetDT, id == 2)$prescription_dateplustime1; id = 2; LinkId <- subset(drugsetDT, id == 2)$LinkId
+  # timeSeriesDataPoint <- subset(interestSetDT, id == 2)$timeSeriesDataPoint; dateplustime1 <- subset(interestSetDT, id == 2)$dateplustime1; id = 2; LinkId <- subset(interestSetDT, id == 2)$LinkId
   
-  inputSet <- data.table(DrugName, prescription_dateplustime1)
+  inputSet <- data.table(timeSeriesDataPoint, dateplustime1)
   
   ## add nil values to fill time slots without any drugs
   nilFrame <- as.data.frame(matrix(nrow = length(sequence), ncol = ncol(inputSet)))
   colnames(nilFrame) <- colnames(inputSet)
   
-  nilFrame$DrugName <- 'nil'
-  nilFrame$prescription_dateplustime1 <- sequence
+  
+  nilFrame$timeSeriesDataPoint <- 0
+  nilFrame$dateplustime1 <- sequence
   
   outputSet <- rbind(nilFrame, inputSet)
   
-  ## generate drug words
+  dataBreaks <- split(outputSet$timeSeriesDataPoint, cut(outputSet$dateplustime1, breaks = sequence))
+  outputVector <- c(rep(0, length(sequence)- 1))
   
-  interimSet <- outputSet
+  for (kk in seq(1, length(dataBreaks), 1)) {
+    values <- dataBreaks[[kk]]
+    if (length(values) == 1) { outputVector[kk] = 0}
+    if (length(values) > 0) { outputVector[kk] = quantile(values[values > 0])[3]}
+  }
   
-  interimSet <- interimSet[, interv := cut(prescription_dateplustime1, sequence)][, .(drugs = (unique(DrugName))), by = interv]
-  interimSet[, drugWord := paste(drugs, collapse = ''), by = interv]
-  
-  interimSet <- interimSet[order(interimSet$interv), ]
-  interimSet[, drugSequenceNumber := seq(1, .N, 1), by = interv]
-  
-  reportSet <- interimSet[drugSequenceNumber == 1]
-  reportSet$drugWord <- ifelse(substr(reportSet$drugWord,1,3) == 'nil' & nchar(reportSet$drugWord) == 3, reportSet$drugWord, substr(reportSet$drugWord,4,nchar(reportSet$drugWord)))
-  
-  reportSet <- reportSet[1:nrow(reportSet)-1, ]
-  reportSet$intervalNumber <- c(1:nrow(reportSet))
-  
-  #      print(reportSet$drugWord)
-  
-  return(c(reportSet$drugWord, LinkId[1]))
+  return(c(outputVector, LinkId[1]))
   
   
 }
 
-for (j in seq(1, max(drugsetDT$id), )) {
+for (j in seq(1, max(interestSetDT$id), )) {
   
   if(j%%100 == 0) {print(j)}
   
-  injectionSet <- drugsetDT[id == j]
-  drugWordFrame[j, ] <- returnIntervals(injectionSet$LinkId, injectionSet$DrugName, injectionSet$prescription_dateplustime1, sequence, j)
+  injectionSet <- interestSetDT[id == j]
+  timesetWordFrame[j, ] <- returnIntervals(injectionSet$LinkId, injectionSet$timeSeriesDataPoint, injectionSet$dateplustime1, sequence, j)
 }
 
 # write.table(drugWordFrame, file = "~/R/GlCoSy/MLsource/drugWordFrame_withID_2005_2015.csv", sep=",")
