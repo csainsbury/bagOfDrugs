@@ -119,11 +119,10 @@ cleanDBPData$timeSeriesDataPoint <- cleanDBPData$dbpNumeric
 cleanBMIData <- read.csv("~/R/GlCoSy/SD_workingSource/BMISetDTclean.csv", sep=",", header = TRUE, row.names = NULL)
 cleanBMIData$timeSeriesDataPoint <- cleanBMIData$bmiNumeric
 
-# 
-timeSeriesData <- cleanHbA1cData
+# timeSeriesData <- cleanHbA1cData
 # timeSeriesData <- cleanSBPData
 # timeSeriesData <- cleanDBPData
-# timeSeriesData <- cleanBMIData
+timeSeriesData <- cleanBMIData
 
 timeSeriesDataDT <- data.table(timeSeriesData)
 
@@ -159,10 +158,9 @@ interestSetDT$dateplustime1 <- (interestSetDT$dateplustime1 - min(interestSetDT$
 interestSetDT <- transform(interestSetDT,id=as.numeric(factor(LinkId)))
 
 # set time bins
-#
-sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
+# sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
 # sequence <- seq(0, 1 , 0.1) # 10y runin - in 12 month blocks
-# sequence <- seq(0, 1 , (1/20)) # 10y runin - in 6 month blocks
+sequence <- seq(0, 1 , (1/20)) # 10y runin - in 6 month blocks
 # sequence <- seq(0, 1 , (1/125)) # 10y runin - in 1 month blocks
 
 # generate bag of drugs frame
@@ -197,7 +195,7 @@ returnIntervals <- function(LinkId, timeSeriesDataPoint, dateplustime1, sequence
   }
   
   return(c(outputVector, LinkId[1]))
-
+  
 }
 
 for (j in seq(1, max(interestSetDT$id), )) {
@@ -224,7 +222,7 @@ timesetWordFrame_mortality <- subset(timesetWordFrame_mortality, isDead == 0 | (
 # remove those diagnosed after the end of the runin period
 timesetWordFrame_mortality <- subset(timesetWordFrame_mortality, unix_diagnosisDate <= returnUnixDateTime(endRuninPeriod) )
 # remove those diagnosed after the beginning of the runin period ie all in analysis have had DM throughout followup period
-# timesetWordFrame_mortality <- subset(timesetWordFrame_mortality, unix_diagnosisDate <= returnUnixDateTime(startRuninPeriod) )
+# drugWordFrame_mortality <- subset(drugWordFrame_mortality, unix_diagnosisDate <= returnUnixDateTime(startRuninPeriod) )
 
 timesetWordFrame_forAnalysis <- timesetWordFrame_mortality[, 2:length(sequence)]
 
@@ -237,15 +235,15 @@ y_vector_deadAt_4_year <- ifelse(timesetWordFrame_mortality$isDead == 1 & timese
 y_vector_deadAt_5_year <- ifelse(timesetWordFrame_mortality$isDead == 1 & timesetWordFrame_mortality$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (5 * 365.25 * 24 * 60 * 60)), 1, 0)
 
 # write out sequence for analysis
-write.table(timesetWordFrame_forAnalysis, file = "~/R/GlCoSy/MLsource/hba1c_10ydiabetes.csv", sep=",", row.names = FALSE)
+write.table(timesetWordFrame_forAnalysis, file = "~/R/GlCoSy/MLsource/BMI_10y_2002to2012_6mBins_10yduration_chained_y.csv", sep=",", row.names = FALSE)
 
 # write out dep variable (y)
-write.table(y_vector, file = "~/R/GlCoSy/MLsource/hba1c_10ydiabetes_5y_mortality.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_isType1, file = "~/R/GlCoSy/MLsource/isType1_hba1c_10ydiabetes.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_deadAt_1_year, file = "~/R/GlCoSy/MLsource/hba1c_10ydiabetes_1y_mortality.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_deadAt_2_year, file = "~/R/GlCoSy/MLsource/hba1c_10ydiabetes_2y_mortality.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_deadAt_3_year, file = "~/R/GlCoSy/MLsource/hba1c_10ydiabetes_3y_mortality.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_deadAt_4_year, file = "~/R/GlCoSy/MLsource/hba1c_10ydiabetes_4y_mortality.csv", sep = ",", row.names = FALSE)
+write.table(y_vector, file = "~/R/GlCoSy/MLsource/BMI_5y_mortality_y_10y_2002to2012_6mBins_10yduration_chained_y.csv", sep = ",", row.names = FALSE)
+write.table(y_vector_isType1, file = "~/R/GlCoSy/MLsource/isType1_for_BMI_10y_2002to2012_6mBins_10yduration_chained_y.csv", sep = ",", row.names = FALSE)
+write.table(y_vector_deadAt_1_year, file = "~/R/GlCoSy/MLsource/BMI_1y_mortality_y_10y_2002to2012_6mBins_10yduration_chained_y.csv", sep = ",", row.names = FALSE)
+write.table(y_vector_deadAt_2_year, file = "~/R/GlCoSy/MLsource/BMI_2y_mortality_y_10y_2002to2012_6mBins_10yduration_chained_y.csv", sep = ",", row.names = FALSE)
+write.table(y_vector_deadAt_3_year, file = "~/R/GlCoSy/MLsource/BMI_3y_mortality_y_10y_2002to2012_6mBins_10yduration_chained_y.csv", sep = ",", row.names = FALSE)
+write.table(y_vector_deadAt_4_year, file = "~/R/GlCoSy/MLsource/BMI_4y_mortality_y_10y_2002to2012_6mBins_10yduration_chained_y.csv", sep = ",", row.names = FALSE)
 
 
 
