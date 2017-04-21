@@ -171,12 +171,18 @@ drugDataSet$LinkId <- as.numeric(levels(drugDataSet$LinkId))[drugDataSet$LinkId]
 # drugDataSet$LinkId <- as.numeric(drugDataSet$LinkId)
 # drugDataSet <- read.csv("./test_drug_out_second100kIDs_allTime.txt",header=TRUE,row.names=NULL)
 
-# restrict to diabetes drugs
-interestSet <- subset(drugDataSet, substr(drugDataSet$BNFCode,1,3) == "6.1" | substr(drugDataSet$BNFCode,1,4) == "0601")
-interestSet <- findSimilarDrugs(interestSet)
+# define interest set and switch to standardised class names for drugs
+interestSet <- drugDataSet
+interestSet <- drugsByBNF_code(interestSet)
 interestSetDT <- data.table(interestSet)
-interestSetDT$prescription_dateplustime1 <- returnUnixDateTime(interestSetDT$PrescriptionDateTime)
 
+# write out interestSet with stadardised names
+# write.table(interestSet, file = "~/R/GlCoSy/MLsource/dataset_cvDrugs_standardNames.csv", sep=",", row.names = FALSE)
+# interestSet <- read.csv("~/R/GlCoSy/MLsource/dataset_cvDrugs_standardNames.csv",header=TRUE,row.names=NULL)
+
+interestSet$prescription_dateplustime1 <- returnUnixDateTime(interestSet$PrescriptionDateTime)
+
+interestSetDT <- data.table(interestSet)
 interestSetDT_original <- interestSetDT # run from here if altering runin period
 
 # set runin period of interest
@@ -188,31 +194,40 @@ testDeathDate    <- '2013-01-01'
 interestSetDT <- interestSetDT[prescription_dateplustime1 > returnUnixDateTime(startRuninPeriod) &
                          prescription_dateplustime1 < returnUnixDateTime(endRuninPeriod)]
 
-interestSetDF <- data.frame(interestSetDT)
 
-# generate a top-100 etc list for merging back
-# meeds a bit of data cleaning - merging synonymous drugs etc
-n = 45
-topNdrugs_DrugNames <- as.data.frame(table(interestSetDF$DrugName))
-topNdrugs_DrugNames <- topNdrugs_DrugNames[order(topNdrugs_DrugNames$Freq), ]
+# constrain to standardised drug names:
+interestSetDT <- interestSetDT[DrugName == "VasodilatorAntiHypertensive" |
+                                 DrugName == "CentralActingAntiHypertensive" |
+                                 DrugName == "PeripheralVasodilators" |
+                                 DrugName == "AntiArythmic" |
+                                 DrugName == "OtherDiuretic" |
+                                 DrugName == "PositiveIonotrope" |
+                                 DrugName == "OtherAntiAnginal" |
+                                 DrugName == "Anticoagulants" |
+                                 DrugName == "Nitrates" |
+                                 DrugName == "LoopDiuretic" |
+                                 DrugName == "ThiazideDiuretic" |
+                                 DrugName == "CalciumChannelBlocker" |
+                                 DrugName == "BetaBlocker" |
+                                 DrugName == "AntiPlatelets" |
+                                 DrugName == "ReninAngiotensinDrugs" |
+                                 DrugName == "LipidLowering" |
+                                 DrugName == "AlphaBlocker"
+                               ]
 
-topNdrugs <- tail(topNdrugs_DrugNames, n)
-
-topNdrugs$Var1 <- gsub(" ", "", topNdrugs$Var1, fixed = TRUE)
-topNdrugs$Var1 <- gsub("/", "", topNdrugs$Var1, fixed = TRUE)
-topNdrugs$Var1 <- gsub("-", "", topNdrugs$Var1, fixed = TRUE)
-
-# merge top drugs back with interestSet to generate working data frame:
-interestSet_topN_merge <- merge(interestSetDF, topNdrugs, by.x="DrugName", by.y="Var1")
+rm(interestSet)
+rm(interestSetDT_original)
 
 ###############################
 ## start drug data manipulation
 ###############################
 
-drugsetDT <- data.table(interestSet_topN_merge)
-drugsetDT$prescription_dateplustime1 <- returnUnixDateTime(drugsetDT$PrescriptionDateTime)
+drugsetDT <- interestSetDT
+# drugsetDT$prescription_dateplustime1 <- returnUnixDateTime(drugsetDT$PrescriptionDateTime)
 drugsetDT_original <-drugsetDT # preserve an original full dataset incase needed
 # drugsetDT$LinkId <- as.numeric(levels(drugsetDT$LinkId))[drugsetDT$LinkId]
+
+rm(interestSetDT)
 
 # scale time to 0 to 1 range
 drugsetDT$prescription_dateplustime1.original <- drugsetDT$prescription_dateplustime1
