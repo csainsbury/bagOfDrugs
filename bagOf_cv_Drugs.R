@@ -106,8 +106,56 @@ findSimilarDrugs <- function(inputFrame) {
   return(outputFrame)
 }
 
+drugsByBNF_code <- function(inputFrame) {
+  
+  # inputFrame <- interestSet
+  # inputFrame <- inputFrame[1:10000,]
+  
+  inputFrame$DrugName.original <- inputFrame$DrugName
+  inputFrame$DrugNameNew <- inputFrame$DrugName
+  
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,3) == "2.1" | substr(inputFrame$BNFCode,1,4) == "0201", "PositiveIonotrope", inputFrame$DrugNameNew)
+  
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.2.1" | substr(inputFrame$BNFCode,1,6) == "020201", "ThiazideDiuretic", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.2.2" | substr(inputFrame$BNFCode,1,6) == "020202", "LoopDiuretic", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.2.3" | substr(inputFrame$BNFCode,1,6) == "020203" | substr(inputFrame$BNFCode,1,5) == "2.2.4" | substr(inputFrame$BNFCode,1,6) == "020204" | substr(inputFrame$BNFCode,1,5) == "2.2.5" | substr(inputFrame$BNFCode,1,6) == "020205", "OtherDiuretic", inputFrame$DrugNameNew)
+  
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,3) == "2.3" | substr(inputFrame$BNFCode,1,4) == "0203", "AntiArythmic", inputFrame$DrugNameNew)
+  
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,3) == "2.4" | substr(inputFrame$BNFCode,1,4) == "0204", "BetaBlocker", inputFrame$DrugNameNew)
+  
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.5.1" | substr(inputFrame$BNFCode,1,6) == "020501", "VasodilatorAntiHypertensive", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.5.2" | substr(inputFrame$BNFCode,1,6) == "020502", "CentralActingAntiHypertensive", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.5.3" | substr(inputFrame$BNFCode,1,6) == "020503", "AdrenergicNeuroneBlocker", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.5.4" | substr(inputFrame$BNFCode,1,6) == "020504", "AlphaBlocker", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.5.5" | substr(inputFrame$BNFCode,1,6) == "020505", "ReninAngiotensinDrugs", inputFrame$DrugNameNew)
+                                   
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.6.1" | substr(inputFrame$BNFCode,1,6) == "020601", "Nitrates", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.6.2" | substr(inputFrame$BNFCode,1,6) == "020602", "CalciumChannelBlocker", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.6.3" | substr(inputFrame$BNFCode,1,6) == "020603", "OtherAntiAnginal", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.6.4" | substr(inputFrame$BNFCode,1,6) == "020604", "PeripheralVasodilators", inputFrame$DrugNameNew)
+  
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,3) == "2.7" | substr(inputFrame$BNFCode,1,4) == "0207", "Sympathomimetics", inputFrame$DrugNameNew)
+  
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,3) == "2.8" | substr(inputFrame$BNFCode,1,4) == "0208", "Anticoagulants", inputFrame$DrugNameNew)
+  
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,3) == "2.9" | substr(inputFrame$BNFCode,1,4) == "0209", "AntiPlatelets", inputFrame$DrugNameNew)
+  
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,4) == "2.12" | substr(inputFrame$BNFCode,1,4) == "0212", "LipidLowering", inputFrame$DrugNameNew)
+
+  outputFrame <- inputFrame
+  
+  outputFrame$DrugName.original <- NULL
+  outputFrame$DrugName <- outputFrame$DrugNameNew
+  outputFrame$DrugNameNew <- NULL
+  
+  return(outputFrame)
+}
+
 # generate node and link files
 drugDataSet <- read.csv("~/R/GlCoSy/SDsource/cv_drugs3.txt",header=TRUE,row.names=NULL)
+
+drugDataSetDT <- data.table(drugDataSet)
 
 # load and process mortality data
 deathData <- read.csv("~/R/GlCoSy/SDsource/diagnosisDateDeathDate.txt", sep=",")
