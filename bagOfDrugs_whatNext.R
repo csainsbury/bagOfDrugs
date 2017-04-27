@@ -327,14 +327,14 @@ findHbA1cValues <- function(LinkId_value, firstSGLT2Prescription, firstWindowMon
 drugsetDT[, c("firstHbA1c", "secondHbA1c") :=  findHbA1cValues(LinkId, firstSGLT2Prescription, 4, 12), by=.(LinkId)]
 
 drugsetDT$include <- ifelse(drugsetDT$firstHbA1c > 0 & drugsetDT$secondHbA1c >0, 1, 0)
-drugsetDT$y <- ifelse(drugsetDT$include == 1 & (drugsetDT$firstHbA1c - drugsetDT$secondHbA1c) >= 5, 1, 0)
+drugsetDT$y <- ifelse(drugsetDT$include == 1 & (drugsetDT$firstHbA1c - drugsetDT$secondHbA1c) >= 20, 1, 0)
 
 # flag single row per ID for merging back with combination data
 drugsetDT$index <- seq(1, nrow(drugsetDT), 1)
 drugsetDT[, c("firstRow") :=  ifelse(index == min(index), 1, 0), by=.(LinkId)]
 
 meetsCriteriaDT <- drugsetDT[include == 1 & firstRow == 1]
-mergeSet <- data.frame(meetsCriteriaDT$LinkId, meetsCriteria$y); colnames(mergeSet) <- c("LinkId", "y")
+mergeSet <- data.frame(meetsCriteriaDT$LinkId, meetsCriteriaDT$y); colnames(mergeSet) <- c("LinkId", "y")
 
 exportMerge <- merge(mergeSet, drugWordFrame, by.x = "LinkId", by.y = "LinkId")
 
@@ -352,10 +352,19 @@ exportMerge <- merge(mergeSet, drugWordFrame, by.x = "LinkId", by.y = "LinkId")
   lookup <- unique(lookup)
   lookup <- data.table(lookup)
 
+  # vectorised lookup table use
+  numericalDrugsFrame <- as.data.frame(matrix(0, nrow = nrow(drugWordFrame_drugNames), ncol = ncol(drugWordFrame_drugNames)))
+  
+  for (jj in seq(1, ncol(drugWordFrame_drugNames), 1)) {
+    
+    index <- match(drugWordFrame_drugNames[,jj], lookup$vectorWords)
+    numericalDrugsFrame[,jj] <- lookup$vectorNumbers[index]
+    
+  }
 
 
 # write out sequence for analysis
-write.table(exportMerge[,3:ncol(exportMerge)], file = "~/R/GlCoSy/MLsource/SGLT2_X.csv", sep=",", row.names = FALSE)
+write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/SGLT2_X.csv", sep=",", row.names = FALSE)
 
 # write out dep variable (y)
 write.table(exportMerge$y, file = "~/R/GlCoSy/MLsource/SGLT2_y.csv", sep = ",", row.names = FALSE)
