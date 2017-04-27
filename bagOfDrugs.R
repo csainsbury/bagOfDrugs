@@ -292,15 +292,19 @@ sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
     y_vector_deadAt_5_year <- ifelse(drugWordFrame_forAnalysis$isDead == 1 & drugWordFrame_forAnalysis$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (5 * 365.25 * 24 * 60 * 60)), 1, 0)
     
     # write out sequence for analysis
-    write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/drugs_10ydiabetes", sep=",", row.names = FALSE)
+    write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/drugs_10y_runin.csv", sep=",", row.names = FALSE)
+    
+    # write out sequence for analysis with LinkId
+    write.table(drugWordFrame_mortality, file = "~/R/GlCoSy/MLsource/drugs_10y_runin_rawWithId.csv", sep=",", row.names = FALSE)
+    
     
     # write out dep variable (y)
-    write.table(y_vector, file = "~/R/GlCoSy/MLsource/drugs_10ydiabetes_5y_mortality.csv", sep = ",", row.names = FALSE)
-    write.table(y_vector_isType1, file = "~/R/GlCoSy/MLsource/isType1_drugs_10ydiabetes.csv", sep = ",", row.names = FALSE)
-    write.table(y_vector_deadAt_1_year, file = "~/R/GlCoSy/MLsource/drugs_10ydiabetes_1y_mortality.csv", sep = ",", row.names = FALSE)
-    write.table(y_vector_deadAt_2_year, file = "~/R/GlCoSy/MLsource/drugs_10ydiabetes_2y_mortality.csv", sep = ",", row.names = FALSE)
-    write.table(y_vector_deadAt_3_year, file = "~/R/GlCoSy/MLsource/drugs_10ydiabetes_3y_mortality.csv", sep = ",", row.names = FALSE)
-    write.table(y_vector_deadAt_4_year, file = "~/R/GlCoSy/MLsource/drugs_10ydiabetes_4y_mortality.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector, file = "~/R/GlCoSy/MLsource/drugs_10y_runin_5y_mortality.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_isType1, file = "~/R/GlCoSy/MLsource/isType1_drugs_10y_runin.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_1_year, file = "~/R/GlCoSy/MLsource/drugs_10y_runin_1y_mortality.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_2_year, file = "~/R/GlCoSy/MLsource/drugs_10y_runin_2y_mortality.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_3_year, file = "~/R/GlCoSy/MLsource/drugs_10y_runin_3y_mortality.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_4_year, file = "~/R/GlCoSy/MLsource/drugs_10y_runin_4y_mortality.csv", sep = ",", row.names = FALSE)
     
     
     

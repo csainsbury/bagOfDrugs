@@ -114,34 +114,34 @@ drugsByBNF_code <- function(inputFrame) {
   inputFrame$DrugName.original <- inputFrame$DrugName
   inputFrame$DrugNameNew <- inputFrame$DrugName
   
-  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,3) == "2.1" | substr(inputFrame$BNFCode,1,4) == "0201", "PositiveIonotrope", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,3) == "2.1" | substr(inputFrame$BNFCode,1,4) == "0201" | substr(inputFrame$BNFCode,1,5) == "02.01", "PositiveIonotrope", inputFrame$DrugNameNew)
   
-  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.2.1" | substr(inputFrame$BNFCode,1,6) == "020201", "ThiazideDiuretic", inputFrame$DrugNameNew)
-  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.2.2" | substr(inputFrame$BNFCode,1,6) == "020202", "LoopDiuretic", inputFrame$DrugNameNew)
-  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.2.3" | substr(inputFrame$BNFCode,1,6) == "020203" | substr(inputFrame$BNFCode,1,5) == "2.2.4" | substr(inputFrame$BNFCode,1,6) == "020204" | substr(inputFrame$BNFCode,1,5) == "2.2.5" | substr(inputFrame$BNFCode,1,6) == "020205", "OtherDiuretic", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.2.1" | substr(inputFrame$BNFCode,1,6) == "020201" | substr(inputFrame$BNFCode,1,8) == "02.02.01", "ThiazideDiuretic", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.2.2" | substr(inputFrame$BNFCode,1,6) == "020202" | substr(inputFrame$BNFCode,1,8) == "02.02.02", "LoopDiuretic", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.2.3" | substr(inputFrame$BNFCode,1,6) == "020203" | substr(inputFrame$BNFCode,1,8) == "02.02.03" | substr(inputFrame$BNFCode,1,5) == "2.2.4" | substr(inputFrame$BNFCode,1,6) == "020204" | substr(inputFrame$BNFCode,1,5) == "2.2.5" | substr(inputFrame$BNFCode,1,6) == "020205" | substr(inputFrame$BNFCode,1,8) == "02.02.05", "OtherDiuretic", inputFrame$DrugNameNew)
   
-  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,3) == "2.3" | substr(inputFrame$BNFCode,1,4) == "0203", "AntiArythmic", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,3) == "2.3" | substr(inputFrame$BNFCode,1,4) == "0203" | substr(inputFrame$BNFCode,1,5) == "02.03", "AntiArythmic", inputFrame$DrugNameNew)
   
-  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,3) == "2.4" | substr(inputFrame$BNFCode,1,4) == "0204", "BetaBlocker", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,3) == "2.4" | substr(inputFrame$BNFCode,1,4) == "0204" | substr(inputFrame$BNFCode,1,5) == "02.04", "BetaBlocker", inputFrame$DrugNameNew)
   
-  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.5.1" | substr(inputFrame$BNFCode,1,6) == "020501", "VasodilatorAntiHypertensive", inputFrame$DrugNameNew)
-  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.5.2" | substr(inputFrame$BNFCode,1,6) == "020502", "CentralActingAntiHypertensive", inputFrame$DrugNameNew)
-  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.5.3" | substr(inputFrame$BNFCode,1,6) == "020503", "AdrenergicNeuroneBlocker", inputFrame$DrugNameNew)
-  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.5.4" | substr(inputFrame$BNFCode,1,6) == "020504", "AlphaBlocker", inputFrame$DrugNameNew)
-  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.5.5" | substr(inputFrame$BNFCode,1,6) == "020505", "ReninAngiotensinDrugs", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.5.1" | substr(inputFrame$BNFCode,1,6) == "020501" | substr(inputFrame$BNFCode,1,8) == "02.05.01", "VasodilatorAntiHypertensive", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.5.2" | substr(inputFrame$BNFCode,1,6) == "020502" | substr(inputFrame$BNFCode,1,8) == "02.05.02", "CentralActingAntiHypertensive", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.5.3" | substr(inputFrame$BNFCode,1,6) == "020503" | substr(inputFrame$BNFCode,1,8) == "02.05.03", "AdrenergicNeuroneBlocker", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.5.4" | substr(inputFrame$BNFCode,1,6) == "020504" | substr(inputFrame$BNFCode,1,8) == "02.05.04", "AlphaBlocker", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.5.5" | substr(inputFrame$BNFCode,1,6) == "020505" | substr(inputFrame$BNFCode,1,8) == "02.05.05", "ReninAngiotensinDrugs", inputFrame$DrugNameNew)
                                    
-  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.6.1" | substr(inputFrame$BNFCode,1,6) == "020601", "Nitrates", inputFrame$DrugNameNew)
-  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.6.2" | substr(inputFrame$BNFCode,1,6) == "020602", "CalciumChannelBlocker", inputFrame$DrugNameNew)
-  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.6.3" | substr(inputFrame$BNFCode,1,6) == "020603", "OtherAntiAnginal", inputFrame$DrugNameNew)
-  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.6.4" | substr(inputFrame$BNFCode,1,6) == "020604", "PeripheralVasodilators", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.6.1" | substr(inputFrame$BNFCode,1,6) == "020601" | substr(inputFrame$BNFCode,1,8) == "02.06.01", "Nitrates", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.6.2" | substr(inputFrame$BNFCode,1,6) == "020602" | substr(inputFrame$BNFCode,1,8) == "02.06.02", "CalciumChannelBlocker", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.6.3" | substr(inputFrame$BNFCode,1,6) == "020603" | substr(inputFrame$BNFCode,1,8) == "02.06.03", "OtherAntiAnginal", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,5) == "2.6.4" | substr(inputFrame$BNFCode,1,6) == "020604" | substr(inputFrame$BNFCode,1,8) == "02.06.04", "PeripheralVasodilators", inputFrame$DrugNameNew)
   
-  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,3) == "2.7" | substr(inputFrame$BNFCode,1,4) == "0207", "Sympathomimetics", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,3) == "2.7" | substr(inputFrame$BNFCode,1,4) == "0207" | substr(inputFrame$BNFCode,1,5) == "02.07", "Sympathomimetics", inputFrame$DrugNameNew)
   
-  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,3) == "2.8" | substr(inputFrame$BNFCode,1,4) == "0208", "Anticoagulants", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,3) == "2.8" | substr(inputFrame$BNFCode,1,4) == "0208" | substr(inputFrame$BNFCode,1,5) == "02.08", "Anticoagulants", inputFrame$DrugNameNew)
   
-  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,3) == "2.9" | substr(inputFrame$BNFCode,1,4) == "0209", "AntiPlatelets", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,3) == "2.9" | substr(inputFrame$BNFCode,1,4) == "0209" | substr(inputFrame$BNFCode,1,5) == "02.09", "AntiPlatelets", inputFrame$DrugNameNew)
   
-  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,4) == "2.12" | substr(inputFrame$BNFCode,1,4) == "0212", "LipidLowering", inputFrame$DrugNameNew)
+  inputFrame$DrugNameNew <- ifelse(substr(inputFrame$BNFCode,1,4) == "2.12" | substr(inputFrame$BNFCode,1,4) == "0212" | substr(inputFrame$BNFCode,1,5) == "02.12", "LipidLowering", inputFrame$DrugNameNew)
 
   outputFrame <- inputFrame
   
@@ -154,6 +154,8 @@ drugsByBNF_code <- function(inputFrame) {
 
 # generate node and link files
 drugDataSet <- read.csv("~/R/GlCoSy/SDsource/cv_drugs3.txt",header=TRUE,row.names=NULL)
+# truncate the drugset for testing.
+# drugDataSet <- drugDataSet[1:100000,]
 
 drugDataSetDT <- data.table(drugDataSet)
 
@@ -307,7 +309,7 @@ sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
     
     # write.table(drugWordFrame, file = "~/R/GlCoSy/MLsource/drugWordFrame_withID_2005_2015.csv", sep=",")
     # drugWordFrame <- read.csv("~/R/GlCoSy/MLsource/drugWordFrame.csv", stringsAsFactors = F, row.names = NULL); drugWordFrame$row.names <- NULL
-    
+     
       # here do analysis to select rows (IDs) for later analysis
       
       # mortality outcome at 2017-01-01
@@ -355,15 +357,15 @@ sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
     y_vector_deadAt_5_year <- ifelse(drugWordFrame_forAnalysis$isDead == 1 & drugWordFrame_forAnalysis$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (5 * 365.25 * 24 * 60 * 60)), 1, 0)
     
     # write out sequence for analysis
-    write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/drugs_10ydiabetes", sep=",", row.names = FALSE)
+    write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/CVdrugsSmall_10ydiabetes.csv", sep=",", row.names = FALSE)
     
     # write out dep variable (y)
-    write.table(y_vector, file = "~/R/GlCoSy/MLsource/drugs_10ydiabetes_5y_mortality.csv", sep = ",", row.names = FALSE)
-    write.table(y_vector_isType1, file = "~/R/GlCoSy/MLsource/isType1_drugs_10ydiabetes.csv", sep = ",", row.names = FALSE)
-    write.table(y_vector_deadAt_1_year, file = "~/R/GlCoSy/MLsource/drugs_10ydiabetes_1y_mortality.csv", sep = ",", row.names = FALSE)
-    write.table(y_vector_deadAt_2_year, file = "~/R/GlCoSy/MLsource/drugs_10ydiabetes_2y_mortality.csv", sep = ",", row.names = FALSE)
-    write.table(y_vector_deadAt_3_year, file = "~/R/GlCoSy/MLsource/drugs_10ydiabetes_3y_mortality.csv", sep = ",", row.names = FALSE)
-    write.table(y_vector_deadAt_4_year, file = "~/R/GlCoSy/MLsource/drugs_10ydiabetes_4y_mortality.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector, file = "~/R/GlCoSy/MLsource/CVdrugs_10ydiabetes_5y_mortality.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_isType1, file = "~/R/GlCoSy/MLsource/isType1_CVdrugs_10ydiabetes.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_1_year, file = "~/R/GlCoSy/MLsource/CVdrugs_10ydiabetes_1y_mortality.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_2_year, file = "~/R/GlCoSy/MLsource/CVdrugsSmall_10ydiabetes_2y_mortality.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_3_year, file = "~/R/GlCoSy/MLsource/CVdrugs_10ydiabetes_3y_mortality.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_4_year, file = "~/R/GlCoSy/MLsource/CVdrugs_10ydiabetes_4y_mortality.csv", sep = ",", row.names = FALSE)
     
     
     

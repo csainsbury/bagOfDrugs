@@ -119,11 +119,11 @@ cleanDBPData$timeSeriesDataPoint <- cleanDBPData$dbpNumeric
 cleanBMIData <- read.csv("~/R/GlCoSy/SD_workingSource/BMISetDTclean.csv", sep=",", header = TRUE, row.names = NULL)
 cleanBMIData$timeSeriesDataPoint <- cleanBMIData$bmiNumeric
 
-# 
-timeSeriesData <- cleanHbA1cData
+# timeSeriesData <- cleanHbA1cData
 # timeSeriesData <- cleanSBPData
 # timeSeriesData <- cleanDBPData
-# timeSeriesData <- cleanBMIData
+# 
+timeSeriesData <- cleanBMIData
 
 timeSeriesDataDT <- data.table(timeSeriesData)
 
@@ -159,10 +159,10 @@ interestSetDT$dateplustime1 <- (interestSetDT$dateplustime1 - min(interestSetDT$
 interestSetDT <- transform(interestSetDT,id=as.numeric(factor(LinkId)))
 
 # set time bins
-#
-sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
+# sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
 # sequence <- seq(0, 1 , 0.1) # 10y runin - in 12 month blocks
-# sequence <- seq(0, 1 , (1/20)) # 10y runin - in 6 month blocks
+# 
+sequence <- seq(0, 1 , (1/20)) # 10y runin - in 6 month blocks
 # sequence <- seq(0, 1 , (1/125)) # 10y runin - in 1 month blocks
 
 # generate bag of drugs frame
@@ -237,15 +237,19 @@ y_vector_deadAt_4_year <- ifelse(timesetWordFrame_mortality$isDead == 1 & timese
 y_vector_deadAt_5_year <- ifelse(timesetWordFrame_mortality$isDead == 1 & timesetWordFrame_mortality$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (5 * 365.25 * 24 * 60 * 60)), 1, 0)
 
 # write out sequence for analysis
-write.table(timesetWordFrame_forAnalysis, file = "~/R/GlCoSy/MLsource/hba1c_10ydiabetes.csv", sep=",", row.names = FALSE)
+write.table(timesetWordFrame_forAnalysis, file = "~/R/GlCoSy/MLsource/bmi_10y_2002to2012_6mBins_chained_y.csv", sep=",", row.names = FALSE)
+
+# write out sequence for analysis with LinkId
+write.table(timesetWordFrame_mortality, file = "~/R/GlCoSy/MLsource/bmi_10y_2002to2012_6mBins_chained_y_rawWithId.csv", sep=",", row.names = FALSE)
+
 
 # write out dep variable (y)
-write.table(y_vector, file = "~/R/GlCoSy/MLsource/hba1c_10ydiabetes_5y_mortality.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_isType1, file = "~/R/GlCoSy/MLsource/isType1_hba1c_10ydiabetes.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_deadAt_1_year, file = "~/R/GlCoSy/MLsource/hba1c_10ydiabetes_1y_mortality.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_deadAt_2_year, file = "~/R/GlCoSy/MLsource/hba1c_10ydiabetes_2y_mortality.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_deadAt_3_year, file = "~/R/GlCoSy/MLsource/hba1c_10ydiabetes_3y_mortality.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_deadAt_4_year, file = "~/R/GlCoSy/MLsource/hba1c_10ydiabetes_4y_mortality.csv", sep = ",", row.names = FALSE)
+write.table(y_vector, file = "~/R/GlCoSy/MLsource/bmi_10y_runin_5y_mortality.csv", sep = ",", row.names = FALSE)
+write.table(y_vector_isType1, file = "~/R/GlCoSy/MLsource/isType1_bmi_10y_runin.csv", sep = ",", row.names = FALSE)
+write.table(y_vector_deadAt_1_year, file = "~/R/GlCoSy/MLsource/bmi_10y_runin_1y_mortality.csv", sep = ",", row.names = FALSE)
+write.table(y_vector_deadAt_2_year, file = "~/R/GlCoSy/MLsource/bmi_10y_runin_2y_mortality.csv", sep = ",", row.names = FALSE)
+write.table(y_vector_deadAt_3_year, file = "~/R/GlCoSy/MLsource/bmi_10y_runin_3y_mortality.csv", sep = ",", row.names = FALSE)
+write.table(y_vector_deadAt_4_year, file = "~/R/GlCoSy/MLsource/bmi_10y_runin_4y_mortality.csv", sep = ",", row.names = FALSE)
 
 
 

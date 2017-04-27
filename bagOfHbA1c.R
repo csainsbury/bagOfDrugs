@@ -223,15 +223,18 @@ y_vector_deadAt_4_year <- ifelse(timesetWordFrame_mortality$isDead == 1 & timese
 y_vector_deadAt_5_year <- ifelse(timesetWordFrame_mortality$isDead == 1 & timesetWordFrame_mortality$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (5 * 365.25 * 24 * 60 * 60)), 1, 0)
 
 # write out sequence for analysis
-write.table(timesetWordFrame_forAnalysis, file = "~/R/GlCoSy/MLsource/hba1c_10y_2002to2012_6mBins_10yduration_chained_y.csv", sep=",", row.names = FALSE)
+write.table(timesetWordFrame_forAnalysis, file = "~/R/GlCoSy/MLsource/hba1c_10y_2002to2012_6mBins_chained_y.csv", sep=",", row.names = FALSE)
+
+# write out sequence for analysis with LinkId
+write.table(timesetWordFrame_mortality, file = "~/R/GlCoSy/MLsource/hba1c_10y_2002to2012_6mBins_chained_y_rawWithId.csv", sep=",", row.names = FALSE)
 
 # write out dep variable (y)
-write.table(y_vector, file = "~/R/GlCoSy/MLsource/hba1c_5y_mortality_y_10y_2002to2012_6mBins_10yduration_chained_y.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_isType1, file = "~/R/GlCoSy/MLsource/isType1_for_hb1ac_10y_2002to2012_6mBins_10yduration_chained_y.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_deadAt_1_year, file = "~/R/GlCoSy/MLsource/hba1c_1y_mortality_y_10y_2002to2012_6mBins_10yduration_chained_y.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_deadAt_2_year, file = "~/R/GlCoSy/MLsource/hba1c_2y_mortality_y_10y_2002to2012_6mBins_10yduration_chained_y.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_deadAt_3_year, file = "~/R/GlCoSy/MLsource/hba1c_3y_mortality_y_10y_2002to2012_6mBins_10yduration_chained_y.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_deadAt_4_year, file = "~/R/GlCoSy/MLsource/hba1c_4y_mortality_y_10y_2002to2012_6mBins_10yduration_chained_y.csv", sep = ",", row.names = FALSE)
+write.table(y_vector, file = "~/R/GlCoSy/MLsource/hba1c_5y_mortality_y_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
+write.table(y_vector_isType1, file = "~/R/GlCoSy/MLsource/isType1_for_hb1ac_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
+write.table(y_vector_deadAt_1_year, file = "~/R/GlCoSy/MLsource/hba1c_1y_mortality_y_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
+write.table(y_vector_deadAt_2_year, file = "~/R/GlCoSy/MLsource/hba1c_2y_mortality_y_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
+write.table(y_vector_deadAt_3_year, file = "~/R/GlCoSy/MLsource/hba1c_3y_mortality_y_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
+write.table(y_vector_deadAt_4_year, file = "~/R/GlCoSy/MLsource/hba1c_4y_mortality_y_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
 
 
 
