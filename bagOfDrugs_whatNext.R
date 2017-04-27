@@ -333,8 +333,32 @@ drugsetDT$y <- ifelse(drugsetDT$include == 1 & (drugsetDT$firstHbA1c - drugsetDT
 drugsetDT$index <- seq(1, nrow(drugsetDT), 1)
 drugsetDT[, c("firstRow") :=  ifelse(index == min(index), 1, 0), by=.(LinkId)]
 
+meetsCriteriaDT <- drugsetDT[include == 1 & firstRow == 1]
+mergeSet <- data.frame(meetsCriteriaDT$LinkId, meetsCriteria$y); colnames(mergeSet) <- c("LinkId", "y")
+
+exportMerge <- merge(mergeSet, drugWordFrame, by.x = "LinkId", by.y = "LinkId")
+
+########################
+# write drug names into numbers
+
+  drugWordFrame_drugNames <- exportMerge[,3:ncol(exportMerge)]
+  
+  drugSentenceFrame <- as.data.frame(matrix(nrow = nrow(drugWordFrame_drugNames), ncol = 1))
+  colnames(drugSentenceFrame) <- c("drugSentence")
+  
+  vectorWords <- as.vector(as.matrix(drugWordFrame_drugNames))
+  vectorNumbers <- as.numeric(as.factor(vectorWords))
+  lookup <- data.frame(vectorWords, vectorNumbers)
+  lookup <- unique(lookup)
+  lookup <- data.table(lookup)
 
 
+
+# write out sequence for analysis
+write.table(exportMerge[,3:ncol(exportMerge)], file = "~/R/GlCoSy/MLsource/SGLT2_X.csv", sep=",", row.names = FALSE)
+
+# write out dep variable (y)
+write.table(exportMerge$y, file = "~/R/GlCoSy/MLsource/SGLT2_y.csv", sep = ",", row.names = FALSE)
 
 
 
