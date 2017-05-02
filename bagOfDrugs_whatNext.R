@@ -201,7 +201,7 @@ drugsetDT <- drugsetDT_firstPrescribed_SGLT2only
 # drugsetDT_original <-drugsetDT # preserve an original full dataset incase needed
 # drugsetDT$LinkId <- as.numeric(levels(drugsetDT$LinkId))[drugsetDT$LinkId]
 
-drugsetDT <- drugsetDT[prescription_dateplustime1 > returnUnixDateTime("1995-01-01") & prescription_dateplustime1 < returnUnixDateTime("2017-01-01")]
+drugsetDT <- drugsetDT[prescription_dateplustime1 > returnUnixDateTime("2005-01-01") & prescription_dateplustime1 < returnUnixDateTime("2017-01-01")]
 
 # scale time to 0 to 1 range
 drugsetDT$prescription_dateplustime1.original <- drugsetDT$prescription_dateplustime1
@@ -229,7 +229,7 @@ intervalYears <- interval / (60*60*24*365.25)
 
 # set time bins
 # 
-sequence <- seq(0, 1 , (1/88)) # 10y runin - in 3 month blocks
+sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
 # sequence <- seq(0, 1 , 0.1) # 10y runin - in 12 month blocks
 # sequence <- seq(0, 1 , (1/125)) # 10y runin - in 3 month blocks
 
@@ -288,6 +288,10 @@ for (j in seq(1, max(drugsetDT$id), )) {
 }
 
 
+drugWordFrame[grep("Dapagliflozin", inputFrame$DrugName, ignore.case = TRUE)] <- "1"
+
+
+
 
 #import hba1c data
 cleanHbA1cData <- read.csv("~/R/GlCoSy/SD_workingSource/hba1cDTclean.csv", sep=",", header = TRUE, row.names = NULL)
@@ -324,10 +328,10 @@ findHbA1cValues <- function(LinkId_value, firstSGLT2Prescription, firstWindowMon
   
 }
 
-drugsetDT[, c("firstHbA1c", "secondHbA1c") :=  findHbA1cValues(LinkId, firstSGLT2Prescription, 4, 12), by=.(LinkId)]
+drugsetDT[, c("firstHbA1c", "secondHbA1c") :=  findHbA1cValues(LinkId, firstSGLT2Prescription, 3, 12), by=.(LinkId)]
 
 drugsetDT$include <- ifelse(drugsetDT$firstHbA1c > 0 & drugsetDT$secondHbA1c >0, 1, 0)
-drugsetDT$y <- ifelse(drugsetDT$include == 1 & (drugsetDT$firstHbA1c - drugsetDT$secondHbA1c) >= 20, 1, 0)
+drugsetDT$y <- ifelse(drugsetDT$include == 1 & (drugsetDT$firstHbA1c - drugsetDT$secondHbA1c) >= 10, 1, 0)
 
 # flag single row per ID for merging back with combination data
 drugsetDT$index <- seq(1, nrow(drugsetDT), 1)
