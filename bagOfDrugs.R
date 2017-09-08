@@ -249,6 +249,10 @@ sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
       
       # mortality outcome at 2017-01-01
       drugWordFrame_mortality <- merge(drugWordFrame, deathData, by.x = "LinkId", by.y= "LinkId")
+      
+      # save out drug frame mortality:
+      write.table(drugWordFrame_mortality, file = "~/R/GlCoSy/MLsource/drugWordFrame_mortality.csv", sep=",", row.names = FALSE)
+      
       # remove those dead before end of FU
       # analysis frame = those who are not dead, or those who have died after the end of the runin period. ie all individuals in analysis alive at the end of the runin period
       drugWordFrame_mortality <- subset(drugWordFrame_mortality, isDead == 0 | (isDead == 1 & unix_deathDate > returnUnixDateTime(endRuninPeriod)) )
@@ -257,6 +261,10 @@ sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
       # remove those diagnosed after the beginning of the runin period ie all in analysis have had DM throughout followup period
       # drugWordFrame_mortality <- subset(drugWordFrame_mortality, unix_diagnosisDate <= returnUnixDateTime(startRuninPeriod) )
       
+      # establish a reference dataset before further manipulation
+      drugWordFrame_mortality_orig <- drugWordFrame_mortality
+      
+      drugWordFrame_mortality <- subset(drugWordFrame_mortality, drugWordFrame_mortality[, 2] != 'nil')
     
     # set up drug sentences for analysis
       
@@ -292,10 +300,15 @@ sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
     y_vector_deadAt_5_year <- ifelse(drugWordFrame_forAnalysis$isDead == 1 & drugWordFrame_forAnalysis$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (5 * 365.25 * 24 * 60 * 60)), 1, 0)
     
     # write out sequence for analysis
-    write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/drugs_10y_runin.csv", sep=",", row.names = FALSE)
+    write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/drugs_10y_runin_fullData.csv", sep=",", row.names = FALSE)
     
     # write out sequence for analysis with LinkId
-    write.table(drugWordFrame_mortality, file = "~/R/GlCoSy/MLsource/drugs_10y_runin_rawWithId.csv", sep=",", row.names = FALSE)
+    write.table(drugWordFrame_mortality, file = "~/R/GlCoSy/MLsource/drugs_10y_runin_rawWithId_fullData.csv", sep=",", row.names = FALSE)
+    
+    # generate composite file with input and output data
+    data_with_outcomes <- data.frame(drugWordFrame_forAnalysis, y_vector, y_vector_isType1, y_vector_deadAt_1_year, y_vector_deadAt_2_year, y_vector_deadAt_3_year, y_vector_deadAt_4_year, y_vector_deadAt_5_year)
+    # write file
+    write.table(data_with_outcomes, file = "~/R/GlCoSy/MLsource/data_with_outcomes.csv", sep=",", row.names = FALSE)
     
     
     # write out dep variable (y)
