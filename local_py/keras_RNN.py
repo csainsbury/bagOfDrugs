@@ -23,7 +23,7 @@ import pandas as pd
 dataset = pd.read_csv('./drugs_10y_runin_fullData.csv')
 drug_dataset = dataset.values
 
-random_y_set = pd.read_csv('./drugs_10y_runin_3y_mortality_fullData.csv')
+random_y_set = pd.read_csv('./drugs_10y_runin_1y_mortality_fullData.csv')
 random_y = random_y_set.values
 
 X_train = drug_dataset[0:9765]
@@ -82,7 +82,7 @@ model.add(Dropout(0.4))
 model.add(Dense(1, activation='sigmoid'))
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 print(model.summary())
-model.fit(X_train, y_train, nb_epoch=4, batch_size=64)
+model.fit(X_train, y_train, nb_epoch=20, batch_size=32)
 # Final evaluation of the model
 scores = model.evaluate(X_test, y_test, verbose=0)
 print("Accuracy: %.2f%%" % (scores[1]*100))
