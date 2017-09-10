@@ -20,16 +20,16 @@ top_words = 5000
 
 import pandas as pd
 # import numpy as np
-dataset = pd.read_csv('./drugs_10y_runin_fullData.csv')
+dataset = pd.read_csv('./drugs_10y_runin_fullData_T2.csv')
 drug_dataset = dataset.values
 
-random_y_set = pd.read_csv('./drugs_10y_runin_1y_mortality_fullData.csv')
+random_y_set = pd.read_csv('./drugs_10y_runin_5y_mortality_fullData_T2.csv')
 random_y = random_y_set.values
 
-X_train = drug_dataset[0:9765]
-X_test = drug_dataset[9766:12207]
-y_train = random_y[0:9765]
-y_test = random_y[9766:12207]
+X_train = drug_dataset[0:8062]
+X_test = drug_dataset[8063:10078]
+y_train = random_y[0:8062]
+y_test = random_y[8063:10078]
 # truncate and pad input sequences
 max_review_length = 40
 X_train = sequence.pad_sequences(X_train, maxlen=max_review_length)
@@ -46,6 +46,15 @@ model.fit(X_train, y_train, nb_epoch=3, batch_size=128)
 # Final evaluation of the model
 scores = model.evaluate(X_test, y_test, verbose=1)
 print("Accuracy: %.2f%%" % (scores[1]*100))
+
+# predict test set results
+y_pred_asNumber = model.predict(X_test)
+y_pred = (y_pred_asNumber > 0.2)
+from sklearn.metrics import confusion_matrix
+cm = confusion_matrix(y_test, y_pred)
+
+from sklearn.metrics import roc_auc_score
+roc_auc_score(y_test, y_pred_asNumber)
 
 ## code with Dropout
 # LSTM with Dropout for sequence classification in the IMDB dataset
@@ -74,15 +83,13 @@ X_test = sequence.pad_sequences(X_test, maxlen=max_review_length)
 embedding_vecor_length = 32
 model = Sequential()
 model.add(Embedding(top_words, embedding_vecor_length, input_length=max_review_length))
-model.add(Dropout(0.4))
-model.add(LSTM(100))
-model.add(Dropout(0.4))
-model.add(LSTM(100))
-model.add(Dropout(0.4))
+model.add(Dropout(0.2))
+model.add(LSTM(400))
+model.add(Dropout(0.2))
 model.add(Dense(1, activation='sigmoid'))
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 print(model.summary())
-model.fit(X_train, y_train, nb_epoch=20, batch_size=32)
+model.fit(X_train, y_train, nb_epoch=8, batch_size=128)
 # Final evaluation of the model
 scores = model.evaluate(X_test, y_test, verbose=0)
 print("Accuracy: %.2f%%" % (scores[1]*100))
@@ -95,6 +102,11 @@ cm = confusion_matrix(y_test, y_pred)
 
 from sklearn.metrics import roc_auc_score
 roc_auc_score(y_test, y_pred_asNumber)
+
+# test sets
+testFrames = pd.read_csv('./test_frames.csv')
+testFrames_dataset = testFrames.values
+model.predict(testFrames_dataset)
 
 from sklearn import metrics
 from sklearn import svm, datasets
