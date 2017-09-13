@@ -132,8 +132,8 @@ interestSetDT$prescription_dateplustime1 <- returnUnixDateTime(interestSetDT$Pre
 interestSetDT_original <- interestSetDT # run from here if altering runin period
 
 # set runin period of interest
-startRuninPeriod <- '2002-01-01'
-endRuninPeriod   <- '2012-01-01'
+startRuninPeriod <- '2011-01-01'
+endRuninPeriod   <- '2016-01-01'
 
 testDeathDate    <- '2013-01-01'
 
@@ -184,7 +184,7 @@ drugsetDT <- transform(drugsetDT,id=as.numeric(factor(LinkId)))
 
     # set time bins
     # 
-sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
+sequence <- seq(0, 1 , (1/20)) # 10y runin - in 3 month blocks
     # sequence <- seq(0, 1 , 0.1) # 10y runin - in 12 month blocks
     # sequence <- seq(0, 1 , (1/125)) # 10y runin - in 3 month blocks
     
@@ -264,8 +264,14 @@ sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
       # establish a reference dataset before further manipulation
       drugWordFrame_mortality_orig <- drugWordFrame_mortality
       
-      drugWordFrame_mortality <- subset(drugWordFrame_mortality, drugWordFrame_mortality[, 2] != 'nil')
-    
+      # drugWordFrame_mortality <- drugWordFrame_mortality_orig
+
+      # restrict data to those with a full 10y of data available
+       drugWordFrame_mortality <- subset(drugWordFrame_mortality, drugWordFrame_mortality[, 2] != 'nil')
+      # restrict data to those with T2DM
+       drugWordFrame_mortality <- subset(drugWordFrame_mortality, DiabetesMellitusType_Mapped == 'Type 2 Diabetes Mellitus')
+       
+       
     # set up drug sentences for analysis
       
       drugWordFrame_forAnalysis <- drugWordFrame_mortality
@@ -300,24 +306,39 @@ sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
     y_vector_deadAt_5_year <- ifelse(drugWordFrame_forAnalysis$isDead == 1 & drugWordFrame_forAnalysis$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (5 * 365.25 * 24 * 60 * 60)), 1, 0)
     
     # write out sequence for analysis
-    write.table(numericalDrugsFrame, file = "~/R/GlCoSy/MLsource/drugs_10y_runin_fullData.csv", sep=",", row.names = FALSE)
+    write.table(numericalDrugsFrame, file = "~/R/_workingDirectory/bagOfDrugs/local_py/drugs_5y_runin_fullData_T2.csv", sep=",", row.names = FALSE)
     
     # write out sequence for analysis with LinkId
-    write.table(drugWordFrame_mortality, file = "~/R/GlCoSy/MLsource/drugs_10y_runin_rawWithId_fullData.csv", sep=",", row.names = FALSE)
+    write.table(drugWordFrame_mortality, file = "~/R/GlCoSy/MLsource/drugs_5y_runin_rawWithId_fullData_T2.csv", sep=",", row.names = FALSE)
     
     # generate composite file with input and output data
-    data_with_outcomes <- data.frame(drugWordFrame_forAnalysis, y_vector, y_vector_isType1, y_vector_deadAt_1_year, y_vector_deadAt_2_year, y_vector_deadAt_3_year, y_vector_deadAt_4_year, y_vector_deadAt_5_year)
+    data_with_outcomes <- data.frame(drugWordFrame_forAnalysis, y_vector, y_vector_isType1, y_vector_deadAt_1_year, y_vector_deadAt_2_year, y_vector_deadAt_3_year, y_vector_deadAt_4_year, y_vector_deadAt_5_year, numericalDrugsFrame)
     # write file
-    write.table(data_with_outcomes, file = "~/R/GlCoSy/MLsource/data_with_outcomes.csv", sep=",", row.names = FALSE)
+    write.table(data_with_outcomes, file = "~/R/GlCoSy/MLsource/data_with_outcomes_T2.csv", sep=",", row.names = FALSE)
     
     
     # write out dep variable (y)
     write.table(y_vector, file = "~/R/GlCoSy/MLsource/drugs_10y_runin_5y_mortality.csv", sep = ",", row.names = FALSE)
     write.table(y_vector_isType1, file = "~/R/GlCoSy/MLsource/isType1_drugs_10y_runin.csv", sep = ",", row.names = FALSE)
-    write.table(y_vector_deadAt_1_year, file = "~/R/GlCoSy/MLsource/drugs_10y_runin_1y_mortality.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_1_year, file = "~/R/GlCoSy/MLsource/drugs_5y_runin_1y_mortality_fullData_T2.csv", sep = ",", row.names = FALSE)
     write.table(y_vector_deadAt_2_year, file = "~/R/GlCoSy/MLsource/drugs_10y_runin_2y_mortality.csv", sep = ",", row.names = FALSE)
-    write.table(y_vector_deadAt_3_year, file = "~/R/GlCoSy/MLsource/drugs_10y_runin_3y_mortality.csv", sep = ",", row.names = FALSE)
-    write.table(y_vector_deadAt_4_year, file = "~/R/GlCoSy/MLsource/drugs_10y_runin_4y_mortality.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_3_year, file = "~/R/GlCoSy/MLsource/drugs_5y_runin_3y_mortality_fullData_T2.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_4_year, file = "~/R/GlCoSy/MLsource/drugs_5y_runin_4y_mortality_fullData_T2.csv", sep = ",", row.names = FALSE)
+    write.table(y_vector_deadAt_5_year, file = "~/R/GlCoSy/MLsource/drugs_5y_runin_5y_mortality_fullData_T2.csv", sep = ",", row.names = FALSE)
+    
+    
+    
+    # generate test sets
+    test_frames <- numericalDrugsFrame[1, ]
+    test_frames[1, ] <- rep(930, ncol(test_frames)) # metformin
+    test_frames[2, ] <- rep(516, ncol(test_frames)) # gliclazide
+    test_frames[3, ] <- rep(632, ncol(test_frames)) # gliclazide plus MF
+    test_frames[4, ] <- rep(906, ncol(test_frames)) # gliclazide plus MF
+    
+    write.table(test_frames, file = "~/R/GlCoSy/MLsource/test_frames.csv", sep=",", row.names = FALSE)
+    
+    
+    
     
     
     
