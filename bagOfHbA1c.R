@@ -146,9 +146,10 @@ interestSetDT$dateplustime1 <- (interestSetDT$dateplustime1 - min(interestSetDT$
 interestSetDT <- transform(interestSetDT,id=as.numeric(factor(LinkId)))
 
 # set time bins
-# sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
+# 
+sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
 # sequence <- seq(0, 1 , 0.1) # 10y runin - in 12 month blocks
-sequence <- seq(0, 1 , (1/20)) # 10y runin - in 6 month blocks
+# sequence <- seq(0, 1 , (1/20)) # 10y runin - in 6 month blocks
 # sequence <- seq(0, 1 , (1/125)) # 10y runin - in 1 month blocks
 
 # generate bag of drugs frame
@@ -176,6 +177,7 @@ returnIntervals <- function(LinkId, timeSeriesDataPoint, dateplustime1, sequence
   dataBreaks <- split(outputSet$timeSeriesDataPoint, cut(outputSet$dateplustime1, breaks = sequence))
   outputVector <- c(rep(0, length(sequence)- 1))
   
+  # returns either 0, or the median of all values in the time bin
   for (kk in seq(1, length(dataBreaks), 1)) {
     values <- dataBreaks[[kk]]
     if (length(values) == 1) { outputVector[kk] = 0}
@@ -186,16 +188,26 @@ returnIntervals <- function(LinkId, timeSeriesDataPoint, dateplustime1, sequence
 
 }
 
-for (j in seq(1, max(interestSetDT$id), )) {
+# for (j in seq(1, max(interestSetDT$id), )) {
+  for (j in seq(1 ,1000, )) {
   
   if(j%%100 == 0) {print(j)}
   
   injectionSet <- interestSetDT[id == j]
   timesetWordFrame[j, ] <- returnIntervals(injectionSet$LinkId, injectionSet$timeSeriesDataPoint, injectionSet$dateplustime1, sequence, j)
+  }
+
+
+# linear interpolation of values
+timesetWordFrame[,1][is.na(timesetWordFrame[,1])] <- 0
+interpolatedTS <- as.data.frame(matrix(nrow = nrow(timesetWordFrame), ncol = (ncol(timesetWordFrame) - 1)))
+
+for (jj in seq(1, nrow(timesetWordFrame), 1)) {
+  interpolatedTS[jj, ] <- na.interpolation(as.numeric(timesetWordFrame[jj, 1:(ncol(timesetWordFrame) - 1)]), option ="linear")
 }
 
-# need to add method of handling NAs - turn to 0
-timesetWordFrame[is.na(timesetWordFrame)] <- 0
+
+# actually need a method of inheriting previous value / imputed value
 
 # write.table(drugWordFrame, file = "~/R/GlCoSy/MLsource/drugWordFrame_withID_2005_2015.csv", sep=",")
 # drugWordFrame <- read.csv("~/R/GlCoSy/MLsource/drugWordFrame.csv", stringsAsFactors = F, row.names = NULL); drugWordFrame$row.names <- NULL
