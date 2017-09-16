@@ -2,6 +2,7 @@
 # library(gtools)
 # library(igraph)
 library(data.table)
+library(imputeTS)
 
 id_per_location <- function(ID) {
   return(length(unique(ID)))
@@ -122,6 +123,8 @@ deathData$unix_deathDate[is.na(deathData$unix_deathDate)] <- 0
 deathData$isDead <- ifelse(deathData$unix_deathDate > 0, 1, 0)
 deathData$unix_diagnosisDate <- returnUnixDateTime(deathData$DateOfDiagnosisDiabetes_Date)
 
+deathDataDT <- data.table(deathData)
+
 
 # set runin period of interest
 startRuninPeriod <- '2002-01-01'
@@ -188,9 +191,9 @@ returnIntervals <- function(LinkId, timeSeriesDataPoint, dateplustime1, sequence
 
 }
 
-# for (j in seq(1, max(interestSetDT$id), )) {
-  for (j in seq(1 ,1000, )) {
-  
+ for (j in seq(1, max(interestSetDT$id), )) {
+# for (j in seq(1 ,1000, )) {
+    
   if(j%%100 == 0) {print(j)}
   
   injectionSet <- interestSetDT[id == j]
@@ -198,16 +201,23 @@ returnIntervals <- function(LinkId, timeSeriesDataPoint, dateplustime1, sequence
   }
 
 
-# linear interpolation of values
+# linear imputation of values
 timesetWordFrame[,1][is.na(timesetWordFrame[,1])] <- 0
 interpolatedTS <- as.data.frame(matrix(nrow = nrow(timesetWordFrame), ncol = (ncol(timesetWordFrame) - 1)))
 
 for (jj in seq(1, nrow(timesetWordFrame), 1)) {
-  interpolatedTS[jj, ] <- na.interpolation(as.numeric(timesetWordFrame[jj, 1:(ncol(timesetWordFrame) - 1)]), option ="linear")
+  
+  if(jj%%100 == 0) {print(jj)}
+  
+  testVector <- c(0, timesetWordFrame[jj, 1:(ncol(timesetWordFrame) - 1)])
+  # interpolatedTS[jj, ] <- na.interpolation(as.numeric(timesetWordFrame[jj, 1:(ncol(timesetWordFrame) - 1)]), option ="linear")
+  
+  interpolatedTS[jj, ] <- na.interpolation(as.numeric(testVector), option ="linear")[2: length(testVector)]
 }
 
+interpolatedTS$LinkId <- timesetWordFrame$LinkId
 
-# actually need a method of inheriting previous value / imputed value
+
 
 # write.table(drugWordFrame, file = "~/R/GlCoSy/MLsource/drugWordFrame_withID_2005_2015.csv", sep=",")
 # drugWordFrame <- read.csv("~/R/GlCoSy/MLsource/drugWordFrame.csv", stringsAsFactors = F, row.names = NULL); drugWordFrame$row.names <- NULL
@@ -215,38 +225,41 @@ for (jj in seq(1, nrow(timesetWordFrame), 1)) {
 # here do analysis to select rows (IDs) for later analysis
 
 # mortality outcome at 2017-01-01
-timesetWordFrame_mortality <- merge(timesetWordFrame, deathData, by.x = "LinkId", by.y= "LinkId")
+interpolatedTS_mortality <- merge(interpolatedTS, deathData, by.x = "LinkId", by.y= "LinkId")
 # remove those dead before end of FU
 # analysis frame = those who are not dead, or those who have died after the end of the runin period. ie all individuals in analysis alive at the end of the runin period
-timesetWordFrame_mortality <- subset(timesetWordFrame_mortality, isDead == 0 | (isDead == 1 & unix_deathDate > returnUnixDateTime(endRuninPeriod)) )
-# remove those diagnosed after the end of the runin period
-timesetWordFrame_mortality <- subset(timesetWordFrame_mortality, unix_diagnosisDate <= returnUnixDateTime(endRuninPeriod) )
+interpolatedTS_mortality <- subset(interpolatedTS_mortality, isDead == 0 | (isDead == 1 & unix_deathDate > returnUnixDateTime(endRuninPeriod)) )
+# remove those diagnosed after the beginning of the runin period
+interpolatedTS_mortality <- subset(interpolatedTS_mortality, unix_diagnosisDate <= returnUnixDateTime(endRuninPeriod) )
+# remove those diagnosed after the start of the runin period
+interpolatedTS_mortality <- subset(interpolatedTS_mortality, unix_diagnosisDate >= returnUnixDateTime(startRuninPeriod) )
+
 # remove those diagnosed after the beginning of the runin period ie all in analysis have had DM throughout followup period
 # drugWordFrame_mortality <- subset(drugWordFrame_mortality, unix_diagnosisDate <= returnUnixDateTime(startRuninPeriod) )
 
-timesetWordFrame_forAnalysis <- timesetWordFrame_mortality[, 2:length(sequence)]
+interpolatedTS_forAnalysis <- interpolatedTS_mortality[, 2:length(sequence)]
 
-y_vector <- timesetWordFrame_mortality$isDead
-y_vector_isType1 <- ifelse(timesetWordFrame_mortality$DiabetesMellitusType_Mapped == 'Type 1 Diabetes Mellitus', 1, 0)
-y_vector_deadAt_1_year <- ifelse(timesetWordFrame_mortality$isDead == 1 & timesetWordFrame_mortality$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (1 * 365.25 * 24 * 60 * 60)), 1, 0)
-y_vector_deadAt_2_year <- ifelse(timesetWordFrame_mortality$isDead == 1 & timesetWordFrame_mortality$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (2 * 365.25 * 24 * 60 * 60)), 1, 0)
-y_vector_deadAt_3_year <- ifelse(timesetWordFrame_mortality$isDead == 1 & timesetWordFrame_mortality$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (3 * 365.25 * 24 * 60 * 60)), 1, 0)
-y_vector_deadAt_4_year <- ifelse(timesetWordFrame_mortality$isDead == 1 & timesetWordFrame_mortality$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (4 * 365.25 * 24 * 60 * 60)), 1, 0)
-y_vector_deadAt_5_year <- ifelse(timesetWordFrame_mortality$isDead == 1 & timesetWordFrame_mortality$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (5 * 365.25 * 24 * 60 * 60)), 1, 0)
+y_vector <- interpolatedTS_mortality$isDead
+y_vector_isType1 <- ifelse(interpolatedTS_mortality$DiabetesMellitusType_Mapped == 'Type 1 Diabetes Mellitus', 1, 0)
+y_vector_deadAt_1_year <- ifelse(interpolatedTS_mortality$isDead == 1 & interpolatedTS_mortality$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (1 * 365.25 * 24 * 60 * 60)), 1, 0)
+y_vector_deadAt_2_year <- ifelse(interpolatedTS_mortality$isDead == 1 & interpolatedTS_mortality$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (2 * 365.25 * 24 * 60 * 60)), 1, 0)
+y_vector_deadAt_3_year <- ifelse(interpolatedTS_mortality$isDead == 1 & interpolatedTS_mortality$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (3 * 365.25 * 24 * 60 * 60)), 1, 0)
+y_vector_deadAt_4_year <- ifelse(interpolatedTS_mortality$isDead == 1 & interpolatedTS_mortality$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (4 * 365.25 * 24 * 60 * 60)), 1, 0)
+y_vector_deadAt_5_year <- ifelse(interpolatedTS_mortality$isDead == 1 & interpolatedTS_mortality$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (5 * 365.25 * 24 * 60 * 60)), 1, 0)
 
 # write out sequence for analysis
-write.table(timesetWordFrame_forAnalysis, file = "~/R/GlCoSy/MLsource/hba1c_10y_2002to2012_6mBins_chained_y.csv", sep=",", row.names = FALSE)
+write.table(interpolatedTS_forAnalysis, file = "~/R/_workingDirectory/bagOfDrugs/local_py/hba1c_10y_2002to2012_3mBins_linearInterpolation.csv", sep=",", row.names = FALSE)
 
 # write out sequence for analysis with LinkId
 write.table(timesetWordFrame_mortality, file = "~/R/GlCoSy/MLsource/hba1c_10y_2002to2012_6mBins_chained_y_rawWithId.csv", sep=",", row.names = FALSE)
 
 # write out dep variable (y)
-write.table(y_vector, file = "~/R/GlCoSy/MLsource/hba1c_5y_mortality_y_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_isType1, file = "~/R/GlCoSy/MLsource/isType1_for_hb1ac_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_deadAt_1_year, file = "~/R/GlCoSy/MLsource/hba1c_1y_mortality_y_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_deadAt_2_year, file = "~/R/GlCoSy/MLsource/hba1c_2y_mortality_y_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_deadAt_3_year, file = "~/R/GlCoSy/MLsource/hba1c_3y_mortality_y_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_deadAt_4_year, file = "~/R/GlCoSy/MLsource/hba1c_4y_mortality_y_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
+#write.table(y_vector, file = "~/R/GlCoSy/MLsource/hba1c_5y_mortality_y_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
+#write.table(y_vector_isType1, file = "~/R/GlCoSy/MLsource/isType1_for_hb1ac_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
+#write.table(y_vector_deadAt_1_year, file = "~/R/GlCoSy/MLsource/hba1c_1y_mortality_y_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
+#write.table(y_vector_deadAt_2_year, file = "~/R/GlCoSy/MLsource/hba1c_2y_mortality_y_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
+write.table(y_vector_deadAt_3_year, file = "~/R/_workingDirectory/bagOfDrugs/local_py/hba1c_3y_mortality_y_10y_2002to2012_3mBins_linearInterpolation.csv", sep = ",", row.names = FALSE)
+#write.table(y_vector_deadAt_4_year, file = "~/R/GlCoSy/MLsource/hba1c_4y_mortality_y_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
 
 
 
