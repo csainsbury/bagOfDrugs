@@ -127,8 +127,8 @@ deathDataDT <- data.table(deathData)
 
 
 # set runin period of interest
-startRuninPeriod <- '2002-01-01'
-endRuninPeriod   <- '2012-01-01'
+startRuninPeriod <- '2008-01-01'
+endRuninPeriod   <- '2013-01-01'
 
 # testDeathDate    <- '2013-01-01'
 
@@ -150,7 +150,7 @@ interestSetDT <- transform(interestSetDT,id=as.numeric(factor(LinkId)))
 
 # set time bins
 # 
-sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
+sequence <- seq(0, 1 , (1/30)) # 10y runin - in 3 month blocks
 # sequence <- seq(0, 1 , 0.1) # 10y runin - in 12 month blocks
 # sequence <- seq(0, 1 , (1/20)) # 10y runin - in 6 month blocks
 # sequence <- seq(0, 1 , (1/125)) # 10y runin - in 1 month blocks
@@ -159,6 +159,10 @@ sequence <- seq(0, 1 , (1/40)) # 10y runin - in 3 month blocks
 timesetWordFrame <- as.data.frame(matrix(nrow = length(unique(interestSetDT$LinkId)), ncol = (length(sequence)-1) ))
 colnames(timesetWordFrame) <- c(1:(length(sequence)-1))
 timesetWordFrame$LinkId <- 0
+
+medianFrame <- as.data.frame(matrix(nrow = length(unique(interestSetDT$LinkId)), ncol = 1 ))
+colnames(medianFrame) <- c("median")
+
 
 # function to generate drugwords for each time interval
 returnIntervals <- function(LinkId, timeSeriesDataPoint, dateplustime1, sequence, id) {
@@ -191,31 +195,42 @@ returnIntervals <- function(LinkId, timeSeriesDataPoint, dateplustime1, sequence
 
 }
 
- for (j in seq(1, max(interestSetDT$id), )) {
+ for (j in seq(1, max(interestSetDT$id), 1)) {
 # for (j in seq(1 ,1000, )) {
     
   if(j%%100 == 0) {print(j)}
   
   injectionSet <- interestSetDT[id == j]
   timesetWordFrame[j, ] <- returnIntervals(injectionSet$LinkId, injectionSet$timeSeriesDataPoint, injectionSet$dateplustime1, sequence, j)
-  }
+  medianFrame$median[j] <- quantile(injectionSet$hba1cNumeric)[3]
+ }
 
+# write out timesetWordFrame for analysis
+# write.table(timesetWordFrame, file = "~/R/_workingDirectory/bagOfDrugs/local_py/dataFiles/5y_30increments_2008-2013_hba1c_TS.csv", sep=",", row.names = FALSE)
+# timesetWordFrame <- read.csv("~/R/_workingDirectory/bagOfDrugs/local_py/hba1c_TS.csv")
 
-# linear imputation of values
+# last value carry forward imputation of values
 timesetWordFrame[,1][is.na(timesetWordFrame[,1])] <- 0
 interpolatedTS <- as.data.frame(matrix(nrow = nrow(timesetWordFrame), ncol = (ncol(timesetWordFrame) - 1)))
 
 for (jj in seq(1, nrow(timesetWordFrame), 1)) {
   
-  if(jj%%100 == 0) {print(jj)}
+  if(jj%%1000 == 0) {print(jj)}
   
   testVector <- c(0, timesetWordFrame[jj, 1:(ncol(timesetWordFrame) - 1)])
   # interpolatedTS[jj, ] <- na.interpolation(as.numeric(timesetWordFrame[jj, 1:(ncol(timesetWordFrame) - 1)]), option ="linear")
   
-  interpolatedTS[jj, ] <- na.interpolation(as.numeric(testVector), option ="linear")[2: length(testVector)]
+  # interpolatedTS[jj, ] <- na.interpolation(as.numeric(testVector), option ="linear")[2: length(testVector)]
+  interpolatedTS[jj, ] <- na.locf(as.numeric(testVector), option ="locf")[2: length(testVector)]
 }
 
 interpolatedTS$LinkId <- timesetWordFrame$LinkId
+interpolatedTS$median <- medianFrame$median
+
+
+# write out timesetWordFrame for analysis
+# write.table(interpolatedTS, file = "~/R/_workingDirectory/bagOfDrugs/local_py/dataFiles/interpolatedTS_hba1c_5y_30increments_2008-2013_locf.csv", sep=",", row.names = FALSE)
+
 
 
 
@@ -226,18 +241,37 @@ interpolatedTS$LinkId <- timesetWordFrame$LinkId
 
 # mortality outcome at 2017-01-01
 interpolatedTS_mortality <- merge(interpolatedTS, deathData, by.x = "LinkId", by.y= "LinkId")
+
+# type 2 diabetes only
+interpolatedTS_mortality <- subset(interpolatedTS_mortality, DiabetesMellitusType_Mapped == 'Type 2 Diabetes Mellitus')
+
+# type 1 diabetes only
+# interpolatedTS_mortality <- subset(interpolatedTS_mortality, DiabetesMellitusType_Mapped == 'Type 1 Diabetes Mellitus')
+
 # remove those dead before end of FU
 # analysis frame = those who are not dead, or those who have died after the end of the runin period. ie all individuals in analysis alive at the end of the runin period
 interpolatedTS_mortality <- subset(interpolatedTS_mortality, isDead == 0 | (isDead == 1 & unix_deathDate > returnUnixDateTime(endRuninPeriod)) )
-# remove those diagnosed after the beginning of the runin period
+# remove those diagnosed after the end of the runin period
 interpolatedTS_mortality <- subset(interpolatedTS_mortality, unix_diagnosisDate <= returnUnixDateTime(endRuninPeriod) )
 # remove those diagnosed after the start of the runin period
-interpolatedTS_mortality <- subset(interpolatedTS_mortality, unix_diagnosisDate >= returnUnixDateTime(startRuninPeriod) )
+interpolatedTS_mortality <- subset(interpolatedTS_mortality, unix_diagnosisDate <= returnUnixDateTime(startRuninPeriod) )
+
+interpolatedTS_mortality$age_at_startOfFollowUp <- (returnUnixDateTime(startRuninPeriod) - returnUnixDateTime(as.character(interpolatedTS_mortality$BirthDate))) / (60*60*24*365.25)
 
 # remove those diagnosed after the beginning of the runin period ie all in analysis have had DM throughout followup period
 # drugWordFrame_mortality <- subset(drugWordFrame_mortality, unix_diagnosisDate <= returnUnixDateTime(startRuninPeriod) )
 
 interpolatedTS_forAnalysis <- interpolatedTS_mortality[, 2:length(sequence)]
+
+mean = apply(interpolatedTS_forAnalysis, 1, mean)
+stdev = apply(interpolatedTS_forAnalysis, 1, sd)
+cv = stdev / mean
+
+
+values_plusID_forExport <- data.frame(interpolatedTS_forAnalysis, interpolatedTS_mortality$LinkId, interpolatedTS_mortality$unix_deathDate, interpolatedTS_mortality$age_at_startOfFollowUp, interpolatedTS_mortality$median, cv)
+write.table(values_plusID_forExport, file = "~/R/_workingDirectory/bagOfDrugs/local_py/interpolatedTS_hba1c_5y_30increments_2008-2013_locf.csv", sep=",", row.names = FALSE)
+
+
 
 y_vector <- interpolatedTS_mortality$isDead
 y_vector_isType1 <- ifelse(interpolatedTS_mortality$DiabetesMellitusType_Mapped == 'Type 1 Diabetes Mellitus', 1, 0)
@@ -248,18 +282,20 @@ y_vector_deadAt_4_year <- ifelse(interpolatedTS_mortality$isDead == 1 & interpol
 y_vector_deadAt_5_year <- ifelse(interpolatedTS_mortality$isDead == 1 & interpolatedTS_mortality$unix_deathDate < (returnUnixDateTime(endRuninPeriod) + (5 * 365.25 * 24 * 60 * 60)), 1, 0)
 
 # write out sequence for analysis
-write.table(interpolatedTS_forAnalysis, file = "~/R/_workingDirectory/bagOfDrugs/local_py/hba1c_10y_2002to2012_3mBins_linearInterpolation.csv", sep=",", row.names = FALSE)
+# write.table(interpolatedTS_forAnalysis, file = "~/R/_workingDirectory/bagOfDrugs/local_py/hba1c_5y_30increments_2008-2013_locf_T1.csv", sep=",", row.names = FALSE)
 
 # write out sequence for analysis with LinkId
-write.table(timesetWordFrame_mortality, file = "~/R/GlCoSy/MLsource/hba1c_10y_2002to2012_6mBins_chained_y_rawWithId.csv", sep=",", row.names = FALSE)
+# write.table(timesetWordFrame_mortality, file = "~/R/GlCoSy/MLsource/hba1c_5y_30increments_2008-2013_chained_y_rawWithId.csv", sep=",", row.names = FALSE)
 
 # write out dep variable (y)
 #write.table(y_vector, file = "~/R/GlCoSy/MLsource/hba1c_5y_mortality_y_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
 #write.table(y_vector_isType1, file = "~/R/GlCoSy/MLsource/isType1_for_hb1ac_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
-#write.table(y_vector_deadAt_1_year, file = "~/R/GlCoSy/MLsource/hba1c_1y_mortality_y_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
+#
+write.table(y_vector_deadAt_1_year, file = "~/R/_workingDirectory/bagOfDrugs/local_py/hba1c_1y_mortality_y_5y_30increments_2008-2013_locf.csv", sep = ",", row.names = FALSE)
 #write.table(y_vector_deadAt_2_year, file = "~/R/GlCoSy/MLsource/hba1c_2y_mortality_y_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
-write.table(y_vector_deadAt_3_year, file = "~/R/_workingDirectory/bagOfDrugs/local_py/hba1c_3y_mortality_y_10y_2002to2012_3mBins_linearInterpolation.csv", sep = ",", row.names = FALSE)
-#write.table(y_vector_deadAt_4_year, file = "~/R/GlCoSy/MLsource/hba1c_4y_mortality_y_10y_2002to2012_6mBins_10y_chained_y.csv", sep = ",", row.names = FALSE)
+write.table(y_vector_deadAt_3_year, file = "~/R/_workingDirectory/bagOfDrugs/local_py/hba1c_3y_mortality_y_5y_30increments_2008-2013_locf.csv", sep = ",", row.names = FALSE)
+#
+write.table(y_vector_deadAt_4_year, file = "~/R/_workingDirectory/bagOfDrugs/local_py/hba1c_4y_mortality_y_5y_30increments_2008-2013_locf.csv", sep = ",", row.names = FALSE)
 
 
 
@@ -290,5 +326,16 @@ write.table(y_vector_deadAt_3_year, file = "~/R/_workingDirectory/bagOfDrugs/loc
 
 
 ## need to convert words to numbers - use text proc library, and feed into rnn
+
+
+## import predictions
+pred <- read.csv('~/R/_workingDirectory/bagOfDrugs/local_py/y_pred.csv')
+
+
+
+
+
+
+
 
 
