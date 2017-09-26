@@ -9,8 +9,8 @@ endRuninPeriod   <- '2013-01-01'
 
 
 # import data
-linkId_mortalityData <- read.csv("~/R/_workingDirectory/bagOfDrugs/local_py/5y_30bins_1yMort/Xtest_LinkIds.csv", header = F)
-mortalityProb <- read.csv("~/R/_workingDirectory/bagOfDrugs/local_py/5y_30bins_1yMort/y_pred.csv", header = F)
+linkId_mortalityData <- read.csv("~/R/_workingDirectory/bagOfDrugs/local_py/5y_30bins_4yMort_T1/Xtest_LinkIds.csv", header = F)
+mortalityProb <- read.csv("~/R/_workingDirectory/bagOfDrugs/local_py/5y_30bins_4yMort_T1/y_pred.csv", header = F)
 
 # structure data for survival analysis
 survivalDF <- data.frame(linkId_mortalityData, mortalityProb)
@@ -63,6 +63,10 @@ simpleSurvivalPlot<-function(inputFrame, endDateUnix, ylimMin, mortProb_thresh) 
   
 }
 simpleSurvivalPlot(survivalDF, max(survivalDF$unix_deathDate), 0.7, quantile(survivalDF$mortProb)[3])
+
+print('total deaths: '); print(sum(survivalDF$isDead))
+print('total deaths in high prob group: '); print(sum(subset(survivalDF, mortProb > quantile(survivalDF$mortProb)[3])$isDead))
+
     
     # shorter follow up periods (n years)
     survivalDF_nY <- survivalDF
